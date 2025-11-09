@@ -1,0 +1,256 @@
+[debug] [2025-11-09T01:26:59.613Z] ----------------------------------------------------------------------
+[debug] [2025-11-09T01:26:59.615Z] Command:       /home/victor/.nvm/versions/node/v20.19.5/bin/node /home/victor/.nvm/versions/node/v20.19.5/bin/firebase init
+[debug] [2025-11-09T01:26:59.615Z] CLI Version:   14.23.0
+[debug] [2025-11-09T01:26:59.616Z] Platform:      linux
+[debug] [2025-11-09T01:26:59.616Z] Node Version:  v20.19.5
+[debug] [2025-11-09T01:26:59.616Z] Time:          Sat Nov 08 2025 22:26:59 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2025-11-09T01:26:59.616Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/victor/Documentos/AquaClean
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2025-11-09T01:27:11.222Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-11-09T01:27:11.223Z] > authorizing via signed-in user (leaovic@gmail.com)
+[debug] [2025-11-09T01:27:11.226Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:11.226Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:11.231Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/lavajato-5944c [none]
+[debug] [2025-11-09T01:27:11.958Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/lavajato-5944c 200
+[debug] [2025-11-09T01:27:11.959Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/lavajato-5944c {"projectId":"lavajato-5944c","projectNumber":"136391405566","displayName":"lavajato","name":"projects/lavajato-5944c","resources":{"hostingSite":"lavajato-5944c"},"state":"ACTIVE","etag":"1_850500eb-91b9-441e-bcdb-ab447012af58"}
+[info] i  Using project lavajato-5944c (lavajato) . 
+[info] 
+=== Firestore Setup
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2025-11-09T01:27:11.977Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:11.977Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:11.977Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases [none]
+[debug] [2025-11-09T01:27:12.870Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases 200
+[debug] [2025-11-09T01:27:12.870Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases {"databases":[{"name":"projects/lavajato-5944c/databases/(default)","uid":"4f3e5660-20fe-467d-9fc8-b8e1790c4b4e","createTime":"2025-10-30T23:46:18.739415Z","updateTime":"2025-10-30T23:46:18.739415Z","locationId":"nam5","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2025-11-09T00:27:12.838136Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"s","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IPqdsIP145ADMOLJqImAz5AD"}]}
+[info] 
+[info] Firestore Security Rules allow you to define how and when to allow
+[info] requests. You can keep these rules in your project directory
+[info] and publish them with firebase deploy.
+[info] 
+[debug] [2025-11-09T01:27:12.873Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:12.873Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:12.874Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/lavajato-5944c/releases pageSize=10&pageToken=
+[debug] [2025-11-09T01:27:13.991Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/lavajato-5944c/releases 200
+[debug] [2025-11-09T01:27:13.991Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/lavajato-5944c/releases {"releases":[{"name":"projects/lavajato-5944c/releases/cloud.firestore","rulesetName":"projects/lavajato-5944c/rulesets/d6886cf1-cd2f-4609-9896-1a94c8fd5dfa","createTime":"2025-10-30T23:46:24.426764Z","updateTime":"2025-11-09T01:26:17.244395Z"}]}
+[debug] [2025-11-09T01:27:13.992Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:13.992Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:13.992Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/lavajato-5944c/rulesets/d6886cf1-cd2f-4609-9896-1a94c8fd5dfa [none]
+[debug] [2025-11-09T01:27:14.424Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/lavajato-5944c/rulesets/d6886cf1-cd2f-4609-9896-1a94c8fd5dfa 200
+[debug] [2025-11-09T01:27:14.424Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/lavajato-5944c/rulesets/d6886cf1-cd2f-4609-9896-1a94c8fd5dfa [omitted]
+[info] i  Downloaded the existing Firestore Security Rules from the Firebase console 
+[info] i  firestore.rules is unchanged 
+[info] 
+[info] Firestore indexes allow you to perform complex queries while
+[info] maintaining performance that scales with the size of the result
+[info] set. You can keep index definitions in your project directory
+[info] and publish them with firebase deploy.
+[info] 
+[debug] [2025-11-09T01:27:14.428Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:14.428Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:14.429Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:14.429Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:14.429Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases/(default)/collectionGroups/-/indexes [none]
+[debug] [2025-11-09T01:27:14.430Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* [none]
+[debug] [2025-11-09T01:27:15.395Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases/(default)/collectionGroups/-/indexes 200
+[debug] [2025-11-09T01:27:15.396Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases/(default)/collectionGroups/-/indexes {"indexes":[{"name":"projects/lavajato-5944c/databases/(default)/collectionGroups/agendamentos/indexes/CICAgJjF9oIK","queryScope":"COLLECTION","fields":[{"fieldPath":"userId","order":"ASCENDING"},{"fieldPath":"startTime","order":"DESCENDING"},{"fieldPath":"__name__","order":"DESCENDING"}],"state":"READY","density":"SPARSE_ALL"}]}
+[debug] [2025-11-09T01:27:15.542Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* 200
+[debug] [2025-11-09T01:27:15.542Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/lavajato-5944c/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* {"fields":[{"name":"projects/lavajato-5944c/databases/(default)/collectionGroups/__default__/fields/*","indexConfig":{"indexes":[{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"ASCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"DESCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","arrayConfig":"CONTAINS"}],"state":"READY"}]}}]}
+[info] i  Downloaded the existing Firestore indexes from the Firebase console 
+[info] i  firestore.indexes.json is unchanged 
+[info] ✔  Wrote firestore.indexes.json 
+[info] 
+=== App Hosting Setup
+[debug] [2025-11-09T01:27:15.547Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:15.547Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:15.547Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/lavajato-5944c/billingInfo [none]
+[debug] [2025-11-09T01:27:16.648Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/lavajato-5944c/billingInfo 200
+[debug] [2025-11-09T01:27:16.648Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/lavajato-5944c/billingInfo {"name":"projects/lavajato-5944c/billingInfo","projectId":"lavajato-5944c","billingAccountName":"billingAccounts/0174FA-8C5035-DE4C6D","billingEnabled":true}
+[debug] [2025-11-09T01:27:16.650Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:16.651Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:16.651Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts/firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-11-09T01:27:16.651Z] >>> [apiv2][(partial)header] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts/firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com:testIamPermissions x-goog-quota-user=projects/lavajato-5944c
+[debug] [2025-11-09T01:27:16.651Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts/firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-11-09T01:27:17.708Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts/firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-11-09T01:27:17.708Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts/firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-11-09T01:27:17.709Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:17.709Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:17.710Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts [none]
+[debug] [2025-11-09T01:27:17.710Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts {"accountId":"firebase-app-hosting-compute","serviceAccount":{"displayName":"Firebase App Hosting compute service account","description":"Default service account used to run builds and deploys for Firebase App Hosting"}}
+[debug] [2025-11-09T01:27:18.959Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts 409
+[debug] [2025-11-09T01:27:18.959Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/lavajato-5944c/serviceAccounts [omitted]
+[debug] [2025-11-09T01:27:18.960Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:18.960Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:18.960Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavajato-5944c:getIamPolicy [none]
+[debug] [2025-11-09T01:27:20.484Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavajato-5944c:getIamPolicy 200
+[debug] [2025-11-09T01:27:20.484Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavajato-5944c:getIamPolicy {"version":1,"etag":"BwZDHyHj52U=","bindings":[{"role":"roles/artifactregistry.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-artifactregistry.iam.gserviceaccount.com"]},{"role":"roles/cloudbuild.builds.builder","members":["serviceAccount:136391405566@cloudbuild.gserviceaccount.com"]},{"role":"roles/cloudbuild.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-cloudbuild.iam.gserviceaccount.com"]},{"role":"roles/cloudfunctions.serviceAgent","members":["serviceAccount:service-136391405566@gcf-admin-robot.iam.gserviceaccount.com"]},{"role":"roles/containerregistry.ServiceAgent","members":["serviceAccount:service-136391405566@containerregistry.iam.gserviceaccount.com"]},{"role":"roles/developerconnect.readTokenAccessor","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/editor","members":["serviceAccount:136391405566-compute@developer.gserviceaccount.com","serviceAccount:136391405566@cloudservices.gserviceaccount.com","serviceAccount:lavajato-5944c@appspot.gserviceaccount.com"]},{"role":"roles/firebase.managementServiceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebase.iam.gserviceaccount.com"]},{"role":"roles/firebase.sdkAdminServiceAgent","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com","serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebaseapphosting.computeRunner","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebaseapphosting.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"]},{"role":"roles/firebaseauth.admin","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebasemods.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebasemods.iam.gserviceaccount.com"]},{"role":"roles/firebaserules.system","members":["serviceAccount:service-136391405566@firebase-rules.iam.gserviceaccount.com"]},{"role":"roles/firestore.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firestore.iam.gserviceaccount.com"]},{"role":"roles/iam.serviceAccountTokenCreator","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/owner","members":["user:leaovic@gmail.com"]},{"role":"roles/run.serviceAgent","members":["serviceAccount:service-136391405566@serverless-robot-prod.iam.gserviceaccount.com"]},{"role":"roles/storage.objectViewer","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]}]}
+[debug] [2025-11-09T01:27:20.485Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:20.485Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:20.486Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavajato-5944c:setIamPolicy [none]
+[debug] [2025-11-09T01:27:20.486Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavajato-5944c:setIamPolicy {"policy":{"version":1,"etag":"BwZDHyHj52U=","bindings":[{"role":"roles/artifactregistry.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-artifactregistry.iam.gserviceaccount.com"]},{"role":"roles/cloudbuild.builds.builder","members":["serviceAccount:136391405566@cloudbuild.gserviceaccount.com"]},{"role":"roles/cloudbuild.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-cloudbuild.iam.gserviceaccount.com"]},{"role":"roles/cloudfunctions.serviceAgent","members":["serviceAccount:service-136391405566@gcf-admin-robot.iam.gserviceaccount.com"]},{"role":"roles/containerregistry.ServiceAgent","members":["serviceAccount:service-136391405566@containerregistry.iam.gserviceaccount.com"]},{"role":"roles/developerconnect.readTokenAccessor","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/editor","members":["serviceAccount:136391405566-compute@developer.gserviceaccount.com","serviceAccount:136391405566@cloudservices.gserviceaccount.com","serviceAccount:lavajato-5944c@appspot.gserviceaccount.com"]},{"role":"roles/firebase.managementServiceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebase.iam.gserviceaccount.com"]},{"role":"roles/firebase.sdkAdminServiceAgent","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com","serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebaseapphosting.computeRunner","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebaseapphosting.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"]},{"role":"roles/firebaseauth.admin","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebasemods.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebasemods.iam.gserviceaccount.com"]},{"role":"roles/firebaserules.system","members":["serviceAccount:service-136391405566@firebase-rules.iam.gserviceaccount.com"]},{"role":"roles/firestore.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firestore.iam.gserviceaccount.com"]},{"role":"roles/iam.serviceAccountTokenCreator","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/owner","members":["user:leaovic@gmail.com"]},{"role":"roles/run.serviceAgent","members":["serviceAccount:service-136391405566@serverless-robot-prod.iam.gserviceaccount.com"]},{"role":"roles/storage.objectViewer","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]}]},"updateMask":"bindings"}
+[debug] [2025-11-09T01:27:21.745Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavajato-5944c:setIamPolicy 200
+[debug] [2025-11-09T01:27:21.745Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavajato-5944c:setIamPolicy {"version":1,"etag":"BwZDH1D2UEU=","bindings":[{"role":"roles/artifactregistry.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-artifactregistry.iam.gserviceaccount.com"]},{"role":"roles/cloudbuild.builds.builder","members":["serviceAccount:136391405566@cloudbuild.gserviceaccount.com"]},{"role":"roles/cloudbuild.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-cloudbuild.iam.gserviceaccount.com"]},{"role":"roles/cloudfunctions.serviceAgent","members":["serviceAccount:service-136391405566@gcf-admin-robot.iam.gserviceaccount.com"]},{"role":"roles/containerregistry.ServiceAgent","members":["serviceAccount:service-136391405566@containerregistry.iam.gserviceaccount.com"]},{"role":"roles/developerconnect.readTokenAccessor","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/editor","members":["serviceAccount:136391405566-compute@developer.gserviceaccount.com","serviceAccount:136391405566@cloudservices.gserviceaccount.com","serviceAccount:lavajato-5944c@appspot.gserviceaccount.com"]},{"role":"roles/firebase.managementServiceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebase.iam.gserviceaccount.com"]},{"role":"roles/firebase.sdkAdminServiceAgent","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com","serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebaseapphosting.computeRunner","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebaseapphosting.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebaseapphosting.iam.gserviceaccount.com"]},{"role":"roles/firebaseauth.admin","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/firebasemods.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firebasemods.iam.gserviceaccount.com"]},{"role":"roles/firebaserules.system","members":["serviceAccount:service-136391405566@firebase-rules.iam.gserviceaccount.com"]},{"role":"roles/firestore.serviceAgent","members":["serviceAccount:service-136391405566@gcp-sa-firestore.iam.gserviceaccount.com"]},{"role":"roles/iam.serviceAccountTokenCreator","members":["serviceAccount:firebase-adminsdk-fbsvc@lavajato-5944c.iam.gserviceaccount.com"]},{"role":"roles/owner","members":["user:leaovic@gmail.com"]},{"role":"roles/run.serviceAgent","members":["serviceAccount:service-136391405566@serverless-robot-prod.iam.gserviceaccount.com"]},{"role":"roles/storage.objectViewer","members":["serviceAccount:firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com"]}]}
+[info] i  This command links your local project to Firebase App Hosting. You will be able to deploy your web app with `firebase deploy` after setup. 
+[debug] [2025-11-09T01:27:25.273Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:25.273Z] Checked if tokens are valid: true, expires at: 1762655143613
+[debug] [2025-11-09T01:27:25.273Z] >>> [apiv2][query] GET https://firebaseapphosting.googleapis.com/v1beta/projects/lavajato-5944c/locations/-/backends 
+[debug] [2025-11-09T01:27:26.898Z] <<< [apiv2][status] GET https://firebaseapphosting.googleapis.com/v1beta/projects/lavajato-5944c/locations/-/backends 200
+[debug] [2025-11-09T01:27:26.898Z] <<< [apiv2][body] GET https://firebaseapphosting.googleapis.com/v1beta/projects/lavajato-5944c/locations/-/backends {"backends":[{"name":"projects/lavajato-5944c/locations/us-central1/backends/my-web-app","createTime":"2025-11-08T19:03:18.857804046Z","updateTime":"2025-11-08T19:03:19.155394Z","labels":{"deployment-tool":"cli-firebase"},"uri":"my-web-app--lavajato-5944c.us-central1.hosted.app","managedResources":[{"runService":{"service":"projects/136391405566/locations/us-central1/services/my-web-app"}}],"uid":"0f7b93c4-2e4b-427f-bd75-a50f345bdd38","etag":"14WpfxNDG75TO0s3UQ42P4T21UvZMy-8jlD-xdQerQ4","reconciling":false,"servingLocality":"GLOBAL_ACCESS","serviceAccount":"firebase-app-hosting-compute@lavajato-5944c.iam.gserviceaccount.com","appId":"1:136391405566:web:7f53a5de841bae97619aaf"}]}
+[debug] [2025-11-09T01:27:37.439Z] ExitPromptError: User force closed the prompt with SIGINT
+    at Interface.sigint (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/@inquirer/core/dist/commonjs/lib/create-prompt.js:101:37)
+    at Interface.emit (node:events:524:28)
+    at Interface.emit (node:domain:489:12)
+    at [_ttyWrite] [as _ttyWrite] (node:internal/readline/interface:1128:18)
+    at ReadStream.onkeypress (node:internal/readline/interface:267:20)
+    at ReadStream.emit (node:events:536:35)
+    at ReadStream.emit (node:domain:489:12)
+    at emitKeys (node:internal/readline/utils:371:14)
+    at emitKeys.next (<anonymous>)
+    at ReadStream.onData (node:internal/readline/emitKeypressEvents:64:36)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2025-11-09T01:27:40.149Z] ----------------------------------------------------------------------
+[debug] [2025-11-09T01:27:40.151Z] Command:       /home/victor/.nvm/versions/node/v20.19.5/bin/node /home/victor/.nvm/versions/node/v20.19.5/bin/firebase init
+[debug] [2025-11-09T01:27:40.152Z] CLI Version:   14.23.0
+[debug] [2025-11-09T01:27:40.152Z] Platform:      linux
+[debug] [2025-11-09T01:27:40.152Z] Node Version:  v20.19.5
+[debug] [2025-11-09T01:27:40.152Z] Time:          Sat Nov 08 2025 22:27:40 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2025-11-09T01:27:40.152Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/victor/Documentos/AquaClean
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[debug] [2025-11-09T01:31:40.999Z] Error: setRawMode EIO
+    at ReadStream.setRawMode (node:tty:76:24)
+    at [_setRawMode] [as _setRawMode] (node:internal/readline/interface:377:18)
+    at Interface.close (node:internal/readline/interface:527:24)
+    at ReadStream.ontermend (node:internal/readline/interface:263:10)
+    at ReadStream.emit (node:events:536:35)
+    at ReadStream.emit (node:domain:489:12)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2025-11-09T01:31:41.003Z] Error: write EIO
+    at afterWriteDispatched (node:internal/stream_base_commons:161:15)
+    at writeGeneric (node:internal/stream_base_commons:152:3)
+    at Socket._writeGeneric (node:net:958:11)
+    at Socket._write (node:net:970:8)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at Console.log (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston/lib/winston/transports/console.js:87:23)
+    at Console._write (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/modern.js:103:17)
+    at doWrite (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/node_modules/readable-stream/lib/_stream_writable.js:390:139)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2025-11-09T01:31:41.005Z] Error: write EIO
+    at afterWriteDispatched (node:internal/stream_base_commons:161:15)
+    at writeGeneric (node:internal/stream_base_commons:152:3)
+    at Socket._writeGeneric (node:net:958:11)
+    at Socket._write (node:net:970:8)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at Console.log (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston/lib/winston/transports/console.js:87:23)
+    at Console._write (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/modern.js:103:17)
+    at doWrite (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/node_modules/readable-stream/lib/_stream_writable.js:390:139)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2025-11-09T01:31:41.006Z] Error: write EIO
+    at afterWriteDispatched (node:internal/stream_base_commons:161:15)
+    at writeGeneric (node:internal/stream_base_commons:152:3)
+    at Socket._writeGeneric (node:net:958:11)
+    at Socket._write (node:net:970:8)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at Console.log (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston/lib/winston/transports/console.js:87:23)
+    at Console._write (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/modern.js:103:17)
+    at doWrite (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/node_modules/readable-stream/lib/_stream_writable.js:390:139)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2025-11-09T01:31:41.007Z] Error: write EIO
+    at afterWriteDispatched (node:internal/stream_base_commons:161:15)
+    at writeGeneric (node:internal/stream_base_commons:152:3)
+    at Socket._writeGeneric (node:net:958:11)
+    at Socket._write (node:net:970:8)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at Console.log (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston/lib/winston/transports/console.js:87:23)
+    at Console._write (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/modern.js:103:17)
+    at doWrite (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/node_modules/readable-stream/lib/_stream_writable.js:390:139)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2025-11-09T01:31:41.008Z] Error: write EIO
+    at afterWriteDispatched (node:internal/stream_base_commons:161:15)
+    at writeGeneric (node:internal/stream_base_commons:152:3)
+    at Socket._writeGeneric (node:net:958:11)
+    at Socket._write (node:net:970:8)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at Console.log (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston/lib/winston/transports/console.js:87:23)
+    at Console._write (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/modern.js:103:17)
+    at doWrite (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/node_modules/readable-stream/lib/_stream_writable.js:390:139)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2025-11-09T01:31:41.008Z] Error: write EIO
+    at afterWriteDispatched (node:internal/stream_base_commons:161:15)
+    at writeGeneric (node:internal/stream_base_commons:152:3)
+    at Socket._writeGeneric (node:net:958:11)
+    at Socket._write (node:net:970:8)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at Console.log (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston/lib/winston/transports/console.js:87:23)
+    at Console._write (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/modern.js:103:17)
+    at doWrite (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/node_modules/readable-stream/lib/_stream_writable.js:390:139)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2025-11-09T01:31:41.009Z] Error: write EIO
+    at afterWriteDispatched (node:internal/stream_base_commons:161:15)
+    at writeGeneric (node:internal/stream_base_commons:152:3)
+    at Socket._writeGeneric (node:net:958:11)
+    at Socket._write (node:net:970:8)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at Console.log (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston/lib/winston/transports/console.js:87:23)
+    at Console._write (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/modern.js:103:17)
+    at doWrite (/home/victor/.nvm/versions/node/v20.19.5/lib/node_modules/firebase-tools/node_modules/winston-transport/node_modules/readable-stream/lib/_stream_writable.js:390:139)
+[error] 
+[error] Error: An unexpected error has occurred.
