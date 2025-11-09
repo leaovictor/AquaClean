@@ -3,14 +3,16 @@ import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
 import { Car, Plus, Edit2, CheckCircle, AlertCircle, User } from "lucide-react";
 import type { Vehicle, UserProfile } from "@/shared/types";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
+import { useAuth } from "@/react-app/AuthContext";
+
+const functionsBaseUrl = 'https://ilfoxowzpibbgrpveqrs.supabase.co/functions/v1';
 
 export default function Profile() {
-  const { currentUser, loading } = useAuth(); // Use currentUser and loading from new context
+  const { currentUser, session, loading } = useAuth();
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
-  const [dataLoading, setDataLoading] = useState(true); // Renamed to avoid conflict with auth loading
+  const [dataLoading, setDataLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   
@@ -36,25 +38,25 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (!currentUser && !loading) { // Use currentUser and loading
+    if (!currentUser && !loading) {
       navigate("/");
       return;
     }
 
-    if (currentUser) { // Use currentUser
+    if (currentUser) {
       fetchData();
     }
-  }, [currentUser, loading, navigate]); // Update dependencies
+  }, [currentUser, loading, navigate]);
 
   const fetchData = async () => {
-    if (!currentUser) return;
+    if (!session) return;
     try {
-      const token = await currentUser.getIdToken();
-      const headers = { 'Authorization': 'Bearer ' + token };
+      const token = session.access_token;
+      const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
 
       const [vehiclesRes, userRes] = await Promise.all([
-        fetch("/api/vehicles", { headers }),
-        fetch("/api/users/me", { headers })
+        fetch(`${functionsBaseUrl}/vehicles`, { headers }),
+        fetch(`${functionsBaseUrl}/users-me`, { headers })
       ]);
 
       if (vehiclesRes.ok) {
@@ -64,35 +66,33 @@ export default function Profile() {
 
       if (userRes.ok) {
         const userData = await userRes.json();
-        if (userData.profile) {
-          setProfile(userData.profile);
-          setProfileForm({
-            first_name: userData.profile.first_name || "",
-            last_name: userData.profile.last_name || "",
-            phone: userData.profile.phone || "",
-            address: userData.profile.address || "",
-            city: userData.profile.city || "",
-            state: userData.profile.state || "",
-            zip_code: userData.profile.zip_code || ""
-          });
-        }
+        setProfile(userData);
+        setProfileForm({
+          first_name: userData.first_name || "",
+          last_name: userData.last_name || "",
+          phone: userData.phone || "",
+          address: userData.address || "",
+          city: userData.city || "",
+          state: userData.state || "",
+          zip_code: userData.zip_code || ""
+        });
       }
     } catch (error) {
       console.error("Error fetching data:", error);
       setMessage({ type: 'error', text: 'Failed to load profile data' });
     } finally {
-      setDataLoading(false); // Use dataLoading
+      setDataLoading(false);
     }
   };
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!session) return;
     setMessage(null);
 
     try {
-      const token = await currentUser.getIdToken();
-      const response = await fetch("/api/profile", {
+      const token = session.access_token;
+      const response = await fetch(`${functionsBaseUrl}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -117,7 +117,7 @@ export default function Profile() {
 
   const handleVehicleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!session) return;
     setMessage(null);
 
     if (!vehicleForm.make || !vehicleForm.model || !vehicleForm.year) {
@@ -132,13 +132,13 @@ export default function Profile() {
     }
 
     try {
-      const token = await currentUser.getIdToken();
+      const token = session.access_token;
       const vehicleData = {
         ...vehicleForm,
         year: year
       };
 
-      const response = await fetch("/api/vehicles", {
+      const response = await fetch(`${functionsBaseUrl}/vehicles`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -169,7 +169,7 @@ export default function Profile() {
     }
   };
 
-  if (loading || dataLoading) { // Use combined loading states
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center">
         <div className="animate-pulse text-blue-600">
@@ -327,9 +327,9 @@ export default function Profile() {
           ) : (
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                {currentUser?.photoURL ? ( // Use currentUser.photoURL
+                {currentUser?.user_metadata?.avatar_url ? (
                   <img
-                    src={currentUser.photoURL}
+                    src={currentUser.user_metadata.avatar_url}
                     alt="Profile"
                     className="w-16 h-16 rounded-full"
                   />
@@ -342,7 +342,7 @@ export default function Profile() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     {profile.first_name || profile.last_name
                       ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-                      : currentUser?.email // Use currentUser.email
+                      : currentUser?.email
                     }
                   </h3>
                   <p className="text-gray-600">{currentUser?.email}</p>

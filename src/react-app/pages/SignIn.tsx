@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/shared/firebase';
+import { supabase } from '@/shared/supabase';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/react-app/AuthContext';
 
@@ -21,8 +20,15 @@ const SignIn: React.FC = () => {
     e.preventDefault();
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Navigation is now handled by the useEffect hook
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+      }
+      // Navigation is now handled by the useEffect hook watching currentUser
     } catch (err: any) {
       setError(err.message);
     }

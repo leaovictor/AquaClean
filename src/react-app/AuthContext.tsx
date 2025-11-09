@@ -1,11 +1,11 @@
 // src/react-app/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/shared/firebase'; // Import the auth instance
+import { supabase } from '@/shared/supabase';
+import type { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   currentUser: User | null;
-  auth: typeof auth;
+  session: Session | null;
   loading: boolean;
 }
 
@@ -13,20 +13,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setCurrentUser(session?.user ?? null);
       setLoading(false);
+    };
+
+    getInitialSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setCurrentUser(session?.user ?? null);
     });
 
-    return unsubscribe;
-  }, []); // Removed auth from dependency array as it's a stable import
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   const value = {
     currentUser,
-    auth,
+    session,
     loading,
   };
 

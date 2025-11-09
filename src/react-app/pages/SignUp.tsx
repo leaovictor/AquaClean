@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/shared/firebase';
+import { supabase } from '@/shared/supabase';
 import { useNavigate, Link } from 'react-router-dom';
-import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '@/react-app/AuthContext';
 
 const SignUp: React.FC = () => {
@@ -10,6 +8,7 @@ const SignUp: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
@@ -22,6 +21,7 @@ const SignUp: React.FC = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -29,18 +29,23 @@ const SignUp: React.FC = () => {
     }
 
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      const user = result.user;
-
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: user.email,
-        createdAt: new Date(),
-        role: 'customer', // Default role
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
       });
 
-      // Navigation is now handled by the useEffect hook
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      
+      // Supabase returns a user object with an empty identities array if the user exists but is unconfirmed.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+         setError("This email may already be in use or unconfirmed. Please check your email or try a different one.");
+      } else {
+        setSuccessMessage("Success! Please check your email for a confirmation link to complete your registration.");
+      }
+
     } catch (err: any) {
       setError(err.message);
     }
@@ -55,67 +60,75 @@ const SignUp: React.FC = () => {
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="confirm-password" className="sr-only">
-                Confirm Password
-              </label>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-          </div>
+          {!successMessage ? (
+            <>
+              <div className="rounded-md shadow-sm -space-y-px">
+                <div>
+                  <label htmlFor="email-address" className="sr-only">
+                    Email address
+                  </label>
+                  <input
+                    id="email-address"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="sr-only">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="confirm-password" className="sr-only">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirm-password"
+                    name="confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
 
-          {error && <p className="mt-2 text-center text-sm text-red-600">{error}</p>}
+              {error && <p className="mt-2 text-center text-sm text-red-600">{error}</p>}
 
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Sign up
-            </button>
-          </div>
+              <div>
+                <button
+                  type="submit"
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Sign up
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center p-4 bg-green-100 text-green-800 rounded-md">
+              <p>{successMessage}</p>
+            </div>
+          )}
         </form>
         <div className="text-sm text-center">
           <Link to="/signin" className="font-medium text-indigo-600 hover:text-indigo-500">
