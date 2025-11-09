@@ -24,10 +24,14 @@ export default function Dashboard() {
   }, [currentUser, loading, navigate]); // Update dependencies
 
   const fetchDashboardData = async () => {
+    if (!currentUser) return;
     try {
+      const token = await currentUser.getIdToken();
+      const headers = { 'Authorization': 'Bearer ' + token };
+
       const [appointmentsRes, vehiclesRes] = await Promise.all([
-        fetch("/api/appointments"),
-        fetch("/api/vehicles")
+        fetch("/api/appointments", { headers }),
+        fetch("/api/vehicles", { headers })
       ]);
 
       if (appointmentsRes.ok) {

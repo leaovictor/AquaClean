@@ -1,29 +1,11 @@
-import { useNavigate } from "react-router";
-import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Car, Sparkles, Shield, Clock, ChevronRight } from "lucide-react";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
-import { GoogleAuthProvider, signInWithRedirect } from "firebase/auth"; // Import Firebase Auth methods
+import { useAuth } from "@/react-app/AuthContext";
 
 export default function Home() {
-  const { currentUser, loading, auth } = useAuth(); // Use currentUser, loading, and auth from new context
-  const navigate = useNavigate();
+  const { loading } = useAuth();
 
-  const handleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithRedirect(auth, provider);
-    } catch (error) {
-      console.error("Error signing in with redirect:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (currentUser && !loading) { // Use currentUser and loading
-      navigate("/dashboard");
-    }
-  }, [currentUser, loading, navigate]); // Update dependencies
-
-  if (loading) { // Use loading
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center">
         <div className="animate-pulse text-blue-600">
@@ -47,12 +29,12 @@ export default function Home() {
                 AquaClean Pro
               </h1>
             </div>
-            <button
-              onClick={handleSignIn}
+            <Link
+              to="/signin"
               className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-2 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               Sign In
-            </button>
+            </Link>
           </div>
         </div>
       </header>
@@ -70,13 +52,13 @@ export default function Home() {
             Experience the convenience of professional car washing with flexible scheduling,
             subscription plans, and premium service quality.
           </p>
-          <button
-            onClick={handleSignIn}
+          <Link
+            to="/signup"
             className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-200 shadow-xl hover:shadow-2xl group"
           >
             Get Started Today
             <ChevronRight className="w-5 h-5 inline ml-2 group-hover:translate-x-1 transition-transform" />
-          </button>
+          </Link>
         </div>
       </section>
 
@@ -135,12 +117,12 @@ export default function Home() {
           <p className="text-blue-100 mb-8 text-lg">
             Join thousands of satisfied customers who trust AquaClean Pro for their car care needs.
           </p>
-          <button
-            onClick={handleSignIn}
+          <Link
+            to="/signup"
             className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-200 shadow-xl hover:shadow-2xl"
           >
             Sign Up Now
-          </button>
+          </Link>
         </div>
       </section>
 

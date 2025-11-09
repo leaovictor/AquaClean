@@ -47,10 +47,14 @@ export default function Profile() {
   }, [currentUser, loading, navigate]); // Update dependencies
 
   const fetchData = async () => {
+    if (!currentUser) return;
     try {
+      const token = await currentUser.getIdToken();
+      const headers = { 'Authorization': 'Bearer ' + token };
+
       const [vehiclesRes, userRes] = await Promise.all([
-        fetch("/api/vehicles"),
-        fetch("/api/users/me")
+        fetch("/api/vehicles", { headers }),
+        fetch("/api/users/me", { headers })
       ]);
 
       if (vehiclesRes.ok) {
@@ -83,13 +87,16 @@ export default function Profile() {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) return;
     setMessage(null);
 
     try {
+      const token = await currentUser.getIdToken();
       const response = await fetch("/api/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': 'Bearer ' + token
         },
         body: JSON.stringify(profileForm),
       });
@@ -110,23 +117,32 @@ export default function Profile() {
 
   const handleVehicleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) return;
     setMessage(null);
 
-    if (!vehicleForm.make || !vehicleForm.model) {
-      setMessage({ type: 'error', text: 'Make and model are required' });
+    if (!vehicleForm.make || !vehicleForm.model || !vehicleForm.year) {
+      setMessage({ type: 'error', text: 'Make, model, and year are required' });
+      return;
+    }
+
+    const year = parseInt(vehicleForm.year);
+    if (isNaN(year)) {
+      setMessage({ type: 'error', text: 'Please enter a valid year' });
       return;
     }
 
     try {
+      const token = await currentUser.getIdToken();
       const vehicleData = {
         ...vehicleForm,
-        year: vehicleForm.year ? parseInt(vehicleForm.year) : undefined
+        year: year
       };
 
       const response = await fetch("/api/vehicles", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': 'Bearer ' + token
         },
         body: JSON.stringify(vehicleData),
       });
