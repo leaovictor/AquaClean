@@ -57,7 +57,18 @@ export const UserSubscriptionSchema = z.object({
 
 export type UserSubscription = z.infer<typeof UserSubscriptionSchema>;
 
-// Time Slot Schema
+// Time Slot Rule Schema (for weekly recurring availability)
+export const TimeSlotRuleSchema = z.object({
+  id: z.number(),
+  day_of_week: z.number().min(1).max(7), // 1 for Monday, 7 for Sunday
+  start_time: z.string(), // e.g., "09:00:00"
+  end_time: z.string(),   // e.g., "17:00:00"
+  is_available: z.boolean().default(true),
+});
+
+export type TimeSlotRule = z.infer<typeof TimeSlotRuleSchema>;
+
+// Time Slot Schema (for a specific, bookable slot)
 export const TimeSlotSchema = z.object({
   start_time: z.string(), // ISO string
   end_time: z.string(),   // ISO string
