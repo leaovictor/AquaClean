@@ -11,6 +11,7 @@ import AdminAppointmentsPage from "@/react-app/pages/admin/Appointments";
 import AdminCustomersPage from "@/react-app/pages/admin/Customers";
 import AdminPlansPage from "@/react-app/pages/admin/Plans";
 import AdminReportsPage from "@/react-app/pages/admin/Reports";
+import AdminAvailabilityPage from "@/react-app/pages/admin/Availability";
 import SignIn from "@/react-app/pages/SignIn"; // Import SignIn component
 import SignUp from "@/react-app/pages/SignUp"; // Import SignUp component
 
@@ -114,6 +115,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AdminReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/availability"
+            element={
+              <ProtectedRoute>
+                <AdminAvailabilityPage />
               </ProtectedRoute>
             }
           />

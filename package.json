@@ -36,7 +36,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "lint": "exit 0"
+    "lint": "exit 0",
+    "supabase:start": "npx supabase start"
   },
   "description": "This app was created using https://getmocha.com. Need help or want to join the community? Join our [Discord](https://discord.gg/shDEGBSe2d).",
   "main": "eslint.config.js",

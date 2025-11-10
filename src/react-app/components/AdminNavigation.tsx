@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router";
-import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, Settings, Bell } from "lucide-react";
+import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, Settings, Bell, Clock } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
 import { signOut } from "firebase/auth"; // Import signOut from firebase/auth
@@ -22,6 +22,7 @@ export default function AdminNavigation() {
   const navItems = [
     { path: "/admin/dashboard", icon: BarChart3, label: "Dashboard" },
     { path: "/admin/appointments", icon: Calendar, label: "Appointments" },
+    { path: "/admin/availability", icon: Clock, label: "Availability" },
     { path: "/admin/customers", icon: Users, label: "Customers" },
     { path: "/admin/plans", icon: CreditCard, label: "Plans" },
     { path: "/admin/reports", icon: FileText, label: "Reports" },

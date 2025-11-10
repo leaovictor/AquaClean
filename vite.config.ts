@@ -9,8 +9,9 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       "/api": {
-        target: "https://api-w4ar34g54a-uc.a.run.app",
+        target: "http://localhost:54321",
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
   },
