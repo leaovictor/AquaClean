@@ -12,6 +12,7 @@ export default function Booking() {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<number | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<number | null>(null);
   const [selectedService, setSelectedService] = useState<string>("basic");
@@ -37,9 +38,10 @@ export default function Booking() {
       const token = session.access_token;
       const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
 
-      const [vehiclesRes, timeSlotsRes] = await Promise.all([
+      const [vehiclesRes, timeSlotsRes, appointmentsRes] = await Promise.all([
         fetch(`${functionsBaseUrl}/vehicles`, { headers }),
         fetch(`${functionsBaseUrl}/time-slots`, { headers }),
+        fetch(`${functionsBaseUrl}/appointments`, { headers }),
       ]);
 
       if (vehiclesRes.ok) {
@@ -57,6 +59,11 @@ export default function Booking() {
       if (timeSlotsRes.ok) {
         const timeSlotsData = await timeSlotsRes.json();
         setTimeSlots(timeSlotsData);
+      }
+
+      if (appointmentsRes.ok) {
+        const appointmentsData = await appointmentsRes.json();
+        setAppointments(appointmentsData);
       }
 
     } catch (error) {
@@ -149,6 +156,34 @@ export default function Booking() {
       </div>
     );
   }
+
+  const hasActiveAppointment = appointments.some(apt => apt.status === 'scheduled');
+
+  if (hasActiveAppointment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-8 text-center">
+            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Active Booking Found
+            </h2>
+            <p className="text-gray-600 mb-6">
+              You already have an active appointment. You can only have one scheduled car wash at a time.
+            </p>
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   const serviceTypes = [
     {

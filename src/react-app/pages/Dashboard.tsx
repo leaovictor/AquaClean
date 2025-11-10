@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
-import { Calendar, Car, Clock, Plus, ChevronRight } from "lucide-react";
-import type { Appointment, Vehicle } from "@/shared/types";
+import { Calendar, Car, Clock, Plus, ChevronRight, Trash2 } from "lucide-react";
+import type { Appointment, Vehicle, UserProfile } from "@/shared/types";
 import { useAuth } from "@/react-app/AuthContext";
 
 const functionsBaseUrl = 'https://ilfoxowzpibbgrpveqrs.supabase.co/functions/v1';
@@ -57,6 +57,30 @@ export default function Dashboard() {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setDataLoading(false);
+    }
+  };
+
+  const handleCancel = async (appointmentId: number) => {
+    if (!session) return;
+    try {
+      const token = session.access_token;
+      const response = await fetch(`${functionsBaseUrl}/cancel-appointment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ appointment_id: appointmentId }),
+      });
+
+      if (response.ok) {
+        fetchDashboardData();
+      } else {
+        const errorData = await response.json();
+        console.error("Error canceling appointment:", errorData.error);
+      }
+    } catch (error) {
+      console.error("Error canceling appointment:", error);
     }
   };
 
@@ -134,14 +158,6 @@ export default function Dashboard() {
               <h2 className="text-xl font-semibold text-gray-900">
                 Upcoming Appointments
               </h2>
-              {upcomingAppointments.length > 0 && (
-                <button
-                  onClick={() => navigate("/booking")}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  View All
-                </button>
-              )}
             </div>
 
             {upcomingAppointments.length === 0 ? (
@@ -169,9 +185,16 @@ export default function Dashboard() {
                           {appointment.timeSlot?.date} at {appointment.timeSlot?.time}
                         </span>
                       </div>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                        {appointment.service_type}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          {appointment.service_type}
+                        </span>
+                        {new Date(`${appointment.timeSlot?.date}T${appointment.timeSlot?.time}:00`).getTime() - new Date().getTime() > 60 * 60 * 1000 && (
+                          <button onClick={() => handleCancel(appointment.id)} className="text-red-500 hover:text-red-700">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p className="text-gray-600 text-sm">
                       {appointment.vehicle?.make} {appointment.vehicle?.model} {appointment.vehicle?.year && `(${appointment.vehicle?.year})`}
