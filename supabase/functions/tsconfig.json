@@ -1,13 +1,22 @@
 {
   "compilerOptions": {
-    "target": "es2022",
+    "target": "esnext",
     "module": "esnext",
-    "lib": ["es2022", "dom"],
+    "moduleResolution": "node",
+    "lib": ["esnext", "dom"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "https://esm.sh/react@18.2.0",
+    "allowJs": true,
+    "checkJs": false,
     "strict": true,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "https://deno.land/x/hono/jsx/index.ts"
-  }
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": ["https://deno.land/x/supabase/ts/functions.ts"]
+  },
+  "include": ["**/*.ts"]
 }
