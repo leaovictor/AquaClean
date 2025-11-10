@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
 import { Calendar, Car, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import type { Vehicle, TimeSlot } from "@/shared/types";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
+import { useAuth } from "@/react-app/AuthContext";
+
+const functionsBaseUrl = 'https://ilfoxowzpibbgrpveqrs.supabase.co/functions/v1';
 
 export default function Booking() {
-  const { currentUser, loading } = useAuth(); // Use currentUser and loading from new context
+  const { currentUser, session, loading } = useAuth();
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
@@ -14,33 +16,34 @@ export default function Booking() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<number | null>(null);
   const [selectedService, setSelectedService] = useState<string>("basic");
   const [specialInstructions, setSpecialInstructions] = useState("");
-  const [dataLoading, setDataLoading] = useState(true); // Renamed to avoid conflict with auth loading
+  const [dataLoading, setDataLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    if (!currentUser && !loading) { // Use currentUser and loading
+    if (!currentUser && !loading) {
       navigate("/");
       return;
     }
 
-    if (currentUser) { // Use currentUser
+    if (currentUser) {
       fetchData();
     }
-  }, [currentUser, loading, navigate]); // Update dependencies
+  }, [currentUser, loading, navigate]);
 
   const fetchData = async () => {
+    if (!session) return;
     try {
-      const [vehiclesRes, timeSlotsRes] = await Promise.all([
-        fetch("/api/vehicles"),
-        fetch("/api/time-slots")
-      ]);
+      const token = session.access_token;
+      const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+
+      // TODO: Implement time-slots fetching when the function is ready.
+      const vehiclesRes = await fetch(`${functionsBaseUrl}/vehicles`, { headers });
 
       if (vehiclesRes.ok) {
         const vehiclesData = await vehiclesRes.json();
         setVehicles(vehiclesData);
         
-        // Auto-select default vehicle
         const defaultVehicle = vehiclesData.find((v: Vehicle) => v.is_default);
         if (defaultVehicle) {
           setSelectedVehicle(defaultVehicle.id);
@@ -49,15 +52,11 @@ export default function Booking() {
         }
       }
 
-      if (timeSlotsRes.ok) {
-        const timeSlotsData = await timeSlotsRes.json();
-        setTimeSlots(timeSlotsData);
-      }
     } catch (error) {
       console.error("Error fetching data:", error);
       setMessage({ type: 'error', text: 'Failed to load booking data' });
     } finally {
-      setDataLoading(false); // Use dataLoading
+      setDataLoading(false);
     }
   };
 
@@ -68,15 +67,21 @@ export default function Booking() {
       setMessage({ type: 'error', text: 'Please select a vehicle and time slot' });
       return;
     }
+    if (!session) {
+      setMessage({ type: 'error', text: 'You must be logged in to book an appointment.' });
+      return;
+    }
 
     setSubmitting(true);
     setMessage(null);
 
     try {
-      const response = await fetch("/api/appointments", {
+      const token = session.access_token;
+      const response = await fetch(`${functionsBaseUrl}/appointments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': 'Bearer ' + token,
         },
         body: JSON.stringify({
           vehicle_id: selectedVehicle,
@@ -103,7 +108,7 @@ export default function Booking() {
     }
   };
 
-  if (loading || dataLoading) { // Use combined loading states
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center">
         <div className="animate-pulse text-blue-600">
