@@ -27,7 +27,7 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
-  const { currentUser, loading, session } = useAuth(); // Use currentUser, loading, and session from new context
+  const { currentUser, loading, session, userRole } = useAuth(); // Use currentUser, loading, session, and userRole from new context
   const navigate = useNavigate();
   const [stats, setStats] = useState<AdminStats>({
     totalCustomers: 0,
@@ -47,11 +47,15 @@ export default function AdminDashboard() {
       navigate("/");
       return;
     }
+    if (userRole !== 'admin' && !loading) { // Redirect non-admins
+      navigate("/dashboard");
+      return;
+    }
 
-    if (currentUser && session) { // Use currentUser and session
+    if (currentUser && session && userRole === 'admin') { // Use currentUser, session, and userRole
       fetchAdminData(session);
     }
-  }, [currentUser, loading, navigate, session]); // Update dependencies
+  }, [currentUser, loading, navigate, session, userRole]); // Update dependencies
 
   const fetchAdminData = async (currentSession: Session) => {
     try {
