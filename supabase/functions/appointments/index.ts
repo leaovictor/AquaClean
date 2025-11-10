@@ -42,6 +42,55 @@ serve(async (req) => {
       });
     } 
     
+    // Handle POST request to create a new appointment
+    if (req.method === 'POST') {
+      const { vehicle_id, time_slot_id, service_type, special_instructions } = await req.json();
+
+      // Check if the time slot is available and mark it as unavailable
+      const { data: timeSlot, error: timeSlotError } = await supabaseAdmin
+        .from('time_slots')
+        .select('is_available')
+        .eq('id', time_slot_id)
+        .single();
+
+      if (timeSlotError) throw timeSlotError;
+      if (!timeSlot || !timeSlot.is_available) {
+        return new Response(JSON.stringify({ error: 'Time slot is not available' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409, // Conflict
+        });
+      }
+
+      // Mark time slot as unavailable
+      const { error: updateTimeSlotError } = await supabaseAdmin
+        .from('time_slots')
+        .update({ is_available: false })
+        .eq('id', time_slot_id);
+
+      if (updateTimeSlotError) throw updateTimeSlotError;
+
+      // Insert the new appointment
+      const { data, error } = await supabaseAdmin
+        .from('appointments')
+        .insert({
+          user_id: user.id,
+          vehicle_id,
+          time_slot_id,
+          service_type,
+          special_instructions,
+          status: 'pending', // Default status
+        })
+        .select()
+        .single(); // Expect a single result
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 201, // Created
+      });
+    }
+    
     // Handle other methods
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
