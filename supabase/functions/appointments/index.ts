@@ -46,6 +46,14 @@ serve(async (req) => {
     if (req.method === 'POST') {
       const { vehicle_id, time_slot_id, service_type, special_instructions } = await req.json();
 
+      // Basic validation for required fields
+      if (!vehicle_id || !time_slot_id || !service_type) {
+        return new Response(JSON.stringify({ error: 'Missing required fields: vehicle_id, time_slot_id, and service_type are required.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
       // Check if the time slot is available and mark it as unavailable
       const { data: timeSlot, error: timeSlotError } = await supabaseAdmin
         .from('time_slots')
@@ -73,7 +81,7 @@ serve(async (req) => {
       const { data, error } = await supabaseAdmin
         .from('appointments')
         .insert({
-          user_id: user.id,
+          user_id: user.id, // <--- HERE! user.id is from the JWT
           vehicle_id,
           time_slot_id,
           service_type,
