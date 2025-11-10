@@ -37,8 +37,10 @@ export default function Booking() {
       const token = session.access_token;
       const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
 
-      // TODO: Implement time-slots fetching when the function is ready.
-      const vehiclesRes = await fetch(`${functionsBaseUrl}/vehicles`, { headers });
+      const [vehiclesRes, timeSlotsRes] = await Promise.all([
+        fetch(`${functionsBaseUrl}/vehicles`, { headers }),
+        fetch(`${functionsBaseUrl}/time-slots`, { headers })
+      ]);
 
       if (vehiclesRes.ok) {
         const vehiclesData = await vehiclesRes.json();
@@ -50,6 +52,11 @@ export default function Booking() {
         } else if (vehiclesData.length > 0) {
           setSelectedVehicle(vehiclesData[0].id);
         }
+      }
+
+      if (timeSlotsRes.ok) {
+        const timeSlotsData = await timeSlotsRes.json();
+        setTimeSlots(timeSlotsData);
       }
 
     } catch (error) {
