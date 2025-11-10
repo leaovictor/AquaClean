@@ -31,6 +31,18 @@ export default function AdminTimeSlots() {
   const [pendingEditedSlots, setPendingEditedSlots] = useState<TimeSlot[]>([]);
   const [pendingDeletedSlotIds, setPendingDeletedSlotIds] = useState<number[]>([]);
 
+  const handlePreviousWeek = () => {
+    const currentWeekStart = new Date(selectedWeekStart + 'T00:00:00');
+    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+    setSelectedWeekStart(currentWeekStart.toISOString().split('T')[0]);
+  };
+
+  const handleNextWeek = () => {
+    const currentWeekStart = new Date(selectedWeekStart + 'T00:00:00');
+    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    setSelectedWeekStart(currentWeekStart.toISOString().split('T')[0]);
+  };
+
   const generateWeeklyTimeSlots = (weekStart: string) => {
     const weekSchedule: Record<string, { time: string; is_available: boolean; id?: number }[]> = {};
     const startOfWeek = new Date(weekStart + 'T00:00:00');

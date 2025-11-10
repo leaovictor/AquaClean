@@ -13,7 +13,7 @@ export default function Booking() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<number | null>(null);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<number | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null);
   const [selectedService, setSelectedService] = useState<string>("basic");
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [dataLoading, setDataLoading] = useState(true);
@@ -37,9 +37,12 @@ export default function Booking() {
       const token = session.access_token;
       const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
 
+      const today = new Date().toISOString().split('T')[0];
+      const limitDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 60 days in the future
+
       const [vehiclesRes, timeSlotsRes] = await Promise.all([
         fetch(`${functionsBaseUrl}/vehicles`, { headers }),
-        fetch(`${functionsBaseUrl}/time-slots`, { headers })
+        fetch(`${functionsBaseUrl}/time-slots?start_date=${today}&end_date=${limitDate}`, { headers })
       ]);
 
       if (vehiclesRes.ok) {
@@ -96,7 +99,8 @@ export default function Booking() {
         },
         body: JSON.stringify({
           vehicle_id: selectedVehicle,
-          time_slot_id: selectedTimeSlot,
+          start_time: selectedTimeSlot.start_time,
+          end_time: selectedTimeSlot.end_time,
           service_type: selectedService,
           special_instructions: specialInstructions || undefined,
         }),
@@ -180,10 +184,11 @@ export default function Booking() {
 
   // Group time slots by date
   const groupedTimeSlots = timeSlots.reduce((groups, slot) => {
-    if (!groups[slot.date]) {
-      groups[slot.date] = [];
+    const dateKey = new Date(slot.start_time).toISOString().split('T')[0];
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
     }
-    groups[slot.date].push(slot);
+    groups[dateKey].push(slot);
     return groups;
   }, {} as Record<string, TimeSlot[]>);
 
@@ -305,18 +310,20 @@ export default function Booking() {
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                       {slots.map((slot) => (
                         <button
-                          key={slot.id}
+                          key={slot.start_time} // Use start_time as key
                           type="button"
-                          onClick={() => setSelectedTimeSlot(slot.id)}
+                          onClick={() => setSelectedTimeSlot(slot)} // Set the whole slot object
                           className={`p-3 border rounded-xl text-center transition-all duration-200 ${
-                            selectedTimeSlot === slot.id
+                            selectedTimeSlot?.start_time === slot.start_time
                               ? "border-blue-600 bg-blue-50 text-blue-600"
                               : "border-gray-200 hover:border-blue-300"
                           }`}
                         >
                           <div className="flex items-center justify-center">
                             <Clock className="w-4 h-4 mr-1" />
-                            <span className="text-sm font-medium">{slot.time}</span>
+                            <span className="text-sm font-medium">
+                              {new Date(slot.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </div>
                         </button>
                       ))}

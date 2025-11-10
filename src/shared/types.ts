@@ -59,11 +59,8 @@ export type UserSubscription = z.infer<typeof UserSubscriptionSchema>;
 
 // Time Slot Schema
 export const TimeSlotSchema = z.object({
-  id: z.number(),
-  date: z.string(), // YYYY-MM-DD format
-  time: z.string(), // HH:MM format
-  is_available: z.boolean().default(true),
-  max_appointments: z.number().default(1),
+  start_time: z.string(), // ISO string
+  end_time: z.string(),   // ISO string
 });
 
 export type TimeSlot = z.infer<typeof TimeSlotSchema>;
@@ -73,7 +70,8 @@ export const AppointmentSchema = z.object({
   id: z.number(),
   user_id: z.string(),
   vehicle_id: z.number(),
-  time_slot_id: z.number(),
+  start_time: z.string(), // ISO string
+  end_time: z.string(),   // ISO string
   service_type: z.enum(['basic', 'premium', 'deluxe']),
   status: z.enum(['scheduled', 'in_progress', 'completed', 'canceled']).default('scheduled'),
   special_instructions: z.string().optional(),
@@ -109,7 +107,8 @@ export type CreateVehicleRequest = z.infer<typeof CreateVehicleRequestSchema>;
 
 export const CreateAppointmentRequestSchema = z.object({
   vehicle_id: z.number(),
-  time_slot_id: z.number(),
+  start_time: z.string(), // ISO string
+  end_time: z.string(),   // ISO string
   service_type: z.enum(['basic', 'premium', 'deluxe']),
   special_instructions: z.string().optional(),
 });

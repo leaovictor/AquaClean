@@ -44,50 +44,42 @@ serve(async (req) => {
     
     // Handle POST request to create a new appointment
     if (req.method === 'POST') {
-      const { vehicle_id, time_slot_id, service_type, special_instructions, scheduled_at } = await req.json();
+      const { vehicle_id, start_time, end_time, service_type, special_instructions } = await req.json();
 
       // Basic validation for required fields
-      if (!vehicle_id || !time_slot_id || !service_type || !scheduled_at) {
-        return new Response(JSON.stringify({ error: 'Missing required fields: vehicle_id, time_slot_id, service_type, and scheduled_at are required.' }), {
+      if (!vehicle_id || !start_time || !end_time || !service_type) {
+        return new Response(JSON.stringify({ error: 'Missing required fields: vehicle_id, start_time, end_time, and service_type are required.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
         });
       }
 
-      // Check if the time slot is available and mark it as unavailable
-      const { data: timeSlot, error: timeSlotError } = await supabaseAdmin
-        .from('time_slots')
-        .select('is_available')
-        .eq('id', time_slot_id)
-        .single();
+      // Check for overlapping appointments
+      const { count: conflictingAppointments, error: conflictError } = await supabaseAdmin
+        .from('appointments')
+        .select('id', { count: 'exact' })
+        .eq('status', 'scheduled') // Only consider scheduled appointments for conflicts
+        .or(`and(start_time.lt.${end_time},end_time.gt.${start_time})`); // Check for overlap
 
-      if (timeSlotError) throw timeSlotError;
-      if (!timeSlot || !timeSlot.is_available) {
-        return new Response(JSON.stringify({ error: 'Time slot is not available' }), {
+      if (conflictError) throw conflictError;
+      if (conflictingAppointments && conflictingAppointments > 0) {
+        return new Response(JSON.stringify({ error: 'The selected time slot is already booked.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 409, // Conflict
         });
       }
 
-      // Mark time slot as unavailable
-      const { error: updateTimeSlotError } = await supabaseAdmin
-        .from('time_slots')
-        .update({ is_available: false })
-        .eq('id', time_slot_id);
-
-      if (updateTimeSlotError) throw updateTimeSlotError;
-
       // Insert the new appointment
       const { data, error } = await supabaseAdmin
         .from('appointments')
         .insert({
-          user_id: user.id, // <--- HERE! user.id is from the JWT
+          user_id: user.id,
           vehicle_id,
-          time_slot_id,
+          start_time,
+          end_time,
           service_type,
           special_instructions,
-          scheduled_at, // Include scheduled_at
-          status: 'pending', // Default status
+          status: 'scheduled', // Default status
         })
         .select()
         .single(); // Expect a single result
