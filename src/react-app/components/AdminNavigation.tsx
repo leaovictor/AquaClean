@@ -25,6 +25,7 @@ export default function AdminNavigation() {
     { path: "/admin/customers", icon: Users, label: "Customers" },
     { path: "/admin/plans", icon: CreditCard, label: "Plans" },
     { path: "/admin/reports", icon: FileText, label: "Reports" },
+    { path: "/admin/time-slots", icon: Settings, label: "Time Slots" }, // Add Time Slots navigation
   ];
 
   return (
