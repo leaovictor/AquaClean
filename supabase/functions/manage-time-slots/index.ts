@@ -42,64 +42,58 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Handle GET request to fetch all time slots
+    // Handle GET request to fetch time slots for a specific week
     if (req.method === 'GET') {
       const url = new URL(req.url);
-      const dateFilter = url.searchParams.get('date');
-      const weekStartFilter = url.searchParams.get('weekStart');
-      const weekEndFilter = url.searchParams.get('weekEnd');
+      const weekStart = url.searchParams.get('weekStart');
+      const weekEnd = url.searchParams.get('weekEnd');
 
-      let query = supabaseAdmin
-        .from('time_slots')
-        .select('*');
-      
-      if (dateFilter) {
-        query = query.eq('date', dateFilter);
-      } else if (weekStartFilter && weekEndFilter) {
-        query = query.gte('date', weekStartFilter).lte('date', weekEndFilter);
+      if (!weekStart || !weekEnd) {
+        return new Response(JSON.stringify({ error: 'weekStart and weekEnd are required' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
       }
 
-      const { data: timeSlots, error } = await query
+      const { data, error } = await supabaseAdmin
+        .from('time_slots')
+        .select('*')
+        .gte('date', weekStart)
+        .lte('date', weekEnd)
         .order('date', { ascending: true })
         .order('time', { ascending: true });
 
       if (error) throw error;
 
-      return new Response(JSON.stringify(timeSlots), {
+      return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
 
-    // Handle POST request to create new time slots
+    // Handle POST request to create a new time slot
     if (req.method === 'POST') {
       const { date, time, is_available } = await req.json();
-
       const { data, error } = await supabaseAdmin
         .from('time_slots')
         .insert({ date, time, is_available })
         .select();
-
       if (error) throw error;
-
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201, // Created
+        status: 201,
       });
     }
 
     // Handle PUT request to update a time slot
     if (req.method === 'PUT') {
-      const { id, date, time, is_available } = await req.json();
-
+      const { id, ...updateData } = await req.json();
       const { data, error } = await supabaseAdmin
         .from('time_slots')
-        .update({ date, time, is_available })
+        .update(updateData)
         .eq('id', id)
         .select();
-
       if (error) throw error;
-
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -109,20 +103,14 @@ serve(async (req) => {
     // Handle DELETE request to delete a time slot
     if (req.method === 'DELETE') {
       const { id } = await req.json();
-
-      const { error } = await supabaseAdmin
-        .from('time_slots')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabaseAdmin.from('time_slots').delete().eq('id', id);
       if (error) throw error;
-
-      return new Response(JSON.stringify({ message: 'Time slot deleted successfully' }), {
+      return new Response(JSON.stringify({ message: 'Slot deleted' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
-    
+
     // Handle other methods
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

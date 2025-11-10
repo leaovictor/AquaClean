@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../../_shared/cors.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
   // Handle CORS preflight request
@@ -32,7 +32,7 @@ serve(async (req) => {
     if (!profile || profile.role !== 'admin') {
       return new Response(JSON.stringify({ error: 'Unauthorized: Admin access required' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 403, // Forbidden
+        status: 403,
       });
     }
 
@@ -42,74 +42,49 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Handle POST request for bulk operations
     if (req.method === 'POST') {
       const { newSlots, editedSlots, deletedSlotIds } = await req.json();
-
       const results = {
         new: [],
-        updated: [],
-        deleted: [],
-        errors: [],
+        edited: [],
+        deleted: deletedSlotIds.length,
       };
 
-      // Handle new slots
+      // Create new slots
       if (newSlots && newSlots.length > 0) {
         const { data, error } = await supabaseAdmin
           .from('time_slots')
-          .insert(newSlots.map((slot: any) => ({
-            date: slot.date,
-            time: slot.time,
-            is_available: slot.is_available,
-          })))
+          .insert(newSlots)
           .select();
-        if (error) {
-          results.errors.push({ type: 'newSlots', message: error.message });
-        } else {
-          results.new = data;
-        }
+        if (error) throw new Error(`Error creating new slots: ${error.message}`);
+        results.new = data;
       }
 
-      // Handle edited slots
+      // Update existing slots
       if (editedSlots && editedSlots.length > 0) {
         for (const slot of editedSlots) {
+          const { id, ...updateData } = slot;
           const { data, error } = await supabaseAdmin
             .from('time_slots')
-            .update({
-              date: slot.date,
-              time: slot.time,
-              is_available: slot.is_available,
-            })
-            .eq('id', slot.id)
+            .update(updateData)
+            .eq('id', id)
             .select();
-          if (error) {
-            results.errors.push({ type: 'editedSlot', id: slot.id, message: error.message });
-          } else {
-            results.updated.push(data[0]);
-          }
+          if (error) throw new Error(`Error updating slot ${id}: ${error.message}`);
+          results.edited.push(data[0]);
         }
       }
 
-      // Handle deleted slots
+      // Delete slots
       if (deletedSlotIds && deletedSlotIds.length > 0) {
         const { error } = await supabaseAdmin
           .from('time_slots')
           .delete()
           .in('id', deletedSlotIds);
-        if (error) {
-          results.errors.push({ type: 'deletedSlots', message: error.message });
-        } else {
-          results.deleted = deletedSlotIds;
-        }
+        if (error) throw new Error(`Error deleting slots: ${error.message}`);
       }
 
-      if (results.errors.length > 0) {
-        return new Response(JSON.stringify({ message: 'Some operations failed', details: results }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
-
-      return new Response(JSON.stringify({ message: 'All changes saved successfully', details: results }), {
+      return new Response(JSON.stringify(results), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
