@@ -59,6 +59,10 @@ export type UserSubscription = z.infer<typeof UserSubscriptionSchema>;
 
 // Time Slot Schema
 export const TimeSlotSchema = z.object({
+  id: z.number(),
+  date: z.string(), // YYYY-MM-DD format
+  time: z.string(), // HH:MM format
+  is_available: z.boolean(),
   start_time: z.string(), // ISO string
   end_time: z.string(),   // ISO string
 });
