@@ -27,6 +27,9 @@ export default function AdminTimeSlots() {
   const [editedSlotDate, setEditedSlotDate] = useState('');
   const [editedSlotTime, setEditedSlotTime] = useState('');
   const [editedSlotAvailable, setEditedSlotAvailable] = useState(true);
+  const [pendingNewSlots, setPendingNewSlots] = useState<Omit<TimeSlot, 'id'>[]>([]);
+  const [pendingEditedSlots, setPendingEditedSlots] = useState<TimeSlot[]>([]);
+  const [pendingDeletedSlotIds, setPendingDeletedSlotIds] = useState<number[]>([]);
 
   const generateWeeklyTimeSlots = (weekStart: string) => {
     const weekSchedule: Record<string, { time: string; is_available: boolean; id?: number }[]> = {};
@@ -136,36 +139,25 @@ export default function AdminTimeSlots() {
     }
   };
 
-  const handleAddSlot = async (e: React.FormEvent) => {
+  const handleAddSlot = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSlotDate || !newSlotTime) {
       setMessage({ type: 'error', text: 'Please enter both date and time.' });
       return;
     }
-    if (!session) return;
 
-    try {
-      const token = session.access_token;
-      const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
-      const response = await fetch(`${functionsBaseUrl}/manage-time-slots`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ date: newSlotDate, time: newSlotTime, is_available: true }),
-      });
+    const newSlot = {
+      date: newSlotDate,
+      time: newSlotTime,
+      is_available: true,
+    };
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Time slot added successfully!' });
-        setNewSlotDate('');
-        setNewSlotTime('');
-        fetchTimeSlots(); // Refresh list
-      } else {
-        const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Failed to add time slot' });
-      }
-    } catch (error) {
-      console.error("Error adding time slot:", error);
-      setMessage({ type: 'error', text: 'Failed to add time slot' });
-    }
+    setPendingNewSlots(prev => [...prev, newSlot]);
+    // For immediate UI feedback, add to timeSlots with a temporary ID
+    setTimeSlots(prev => [...prev, { ...newSlot, id: Date.now() }]); // Temporary ID
+    setNewSlotDate('');
+    setNewSlotTime('');
+    setMessage({ type: 'success', text: 'New slot added to pending changes. Click "Save All Changes" to apply.' });
   };
 
   const handleEditClick = (slot: TimeSlot) => {
@@ -175,65 +167,84 @@ export default function AdminTimeSlots() {
     setEditedSlotAvailable(slot.is_available);
   };
 
-  const handleSaveEdit = async (id: number) => {
+  const handleSaveEdit = (id: number) => {
     if (!editedSlotDate || !editedSlotTime) {
       setMessage({ type: 'error', text: 'Please enter both date and time.' });
       return;
     }
+
+    const updatedSlot = {
+      id,
+      date: editedSlotDate,
+      time: editedSlotTime,
+      is_available: editedSlotAvailable,
+    };
+
+    setPendingEditedSlots(prev => {
+      const existingIndex = prev.findIndex(slot => slot.id === id);
+      if (existingIndex > -1) {
+        return prev.map((slot, index) => index === existingIndex ? updatedSlot : slot);
+      }
+      return [...prev, updatedSlot];
+    });
+
+    setTimeSlots(prev => prev.map(slot => slot.id === id ? updatedSlot : slot));
+    setEditingSlotId(null);
+    setMessage({ type: 'success', text: 'Slot updated in pending changes. Click "Save All Changes" to apply.' });
+  };
+
+  const handleDeleteSlot = (id: number) => {
+    if (!confirm('Are you sure you want to delete this time slot?')) return;
+
+    setPendingDeletedSlotIds(prev => [...prev, id]);
+    setTimeSlots(prev => prev.filter(slot => slot.id !== id));
+    setMessage({ type: 'success', text: 'Slot marked for deletion. Click "Save All Changes" to apply.' });
+  };
+
+  const handleSaveChanges = async () => {
     if (!session) return;
+    setIsSaving(true);
+    setMessage(null);
 
     try {
       const token = session.access_token;
       const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
-      const response = await fetch(`${functionsBaseUrl}/manage-time-slots`, {
-        method: 'PUT',
+
+      const response = await fetch(`${functionsBaseUrl}/manage-time-slots/bulk`, { // New bulk endpoint
+        method: 'POST', // Or PUT, depending on backend design
         headers,
         body: JSON.stringify({
-          id,
-          date: editedSlotDate,
-          time: editedSlotTime,
-          is_available: editedSlotAvailable,
+          newSlots: pendingNewSlots,
+          editedSlots: pendingEditedSlots,
+          deletedSlotIds: pendingDeletedSlotIds,
         }),
       });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Time slot updated successfully!' });
-        setEditingSlotId(null);
-        fetchTimeSlots(); // Refresh list
+        setMessage({ type: 'success', text: 'All changes saved successfully!' });
+        setPendingNewSlots([]);
+        setPendingEditedSlots([]);
+        setPendingDeletedSlotIds([]);
+        fetchAndMergeWeeklyTimeSlots(selectedWeekStart, session); // Refresh data
       } else {
         const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Failed to update time slot' });
+        setMessage({ type: 'error', text: errorData.error || 'Failed to save changes' });
       }
     } catch (error) {
-      console.error("Error updating time slot:", error);
-      setMessage({ type: 'error', text: 'Failed to update time slot' });
+      console.error("Error saving changes:", error);
+      setMessage({ type: 'error', text: 'Failed to save changes' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDeleteSlot = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this time slot?')) return;
-    if (!session) return;
-
-    try {
-      const token = session.access_token;
-      const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
-      const response = await fetch(`${functionsBaseUrl}/manage-time-slots`, {
-        method: 'DELETE',
-        headers,
-        body: JSON.stringify({ id }),
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Time slot deleted successfully!' });
-        fetchTimeSlots(); // Refresh list
-      } else {
-        const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Failed to delete time slot' });
-      }
-    } catch (error) {
-      console.error("Error deleting time slot:", error);
-      setMessage({ type: 'error', text: 'Failed to delete time slot' });
-    }
+  const handleCancelChanges = () => {
+    if (!confirm('Are you sure you want to discard all unsaved changes?')) return;
+    setPendingNewSlots([]);
+    setPendingEditedSlots([]);
+    setPendingDeletedSlotIds([]);
+    fetchAndMergeWeeklyTimeSlots(selectedWeekStart, session); // Revert to last saved state
+    setMessage({ type: 'info', text: 'Unsaved changes have been discarded.' });
   };
 
   if (loading || dataLoading) {
@@ -294,6 +305,25 @@ export default function AdminTimeSlots() {
           </div>
         )}
 
+        {/* Week Navigation */}
+        <div className="flex items-center justify-between bg-white rounded-lg shadow-md p-4 mb-6">
+          <button
+            onClick={handlePreviousWeek}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+          >
+            Previous Week
+          </button>
+          <h2 className="text-xl font-semibold text-gray-800">
+            Week of {new Date(selectedWeekStart + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </h2>
+          <button
+            onClick={handleNextWeek}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+          >
+            Next Week
+          </button>
+        </div>
+
         {/* Add New Time Slot Form */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Time Slot</h2>
@@ -328,6 +358,26 @@ export default function AdminTimeSlots() {
             </button>
           </form>
         </div>
+
+        {/* Action Buttons for Bulk Operations */}
+        {(pendingNewSlots.length > 0 || pendingEditedSlots.length > 0 || pendingDeletedSlotIds.length > 0) && (
+          <div className="flex justify-end space-x-4 mb-8">
+            <button
+              onClick={handleCancelChanges}
+              disabled={isSaving}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Cancel Changes
+            </button>
+            <button
+              onClick={handleSaveChanges}
+              disabled={isSaving}
+              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} Save All Changes
+            </button>
+          </div>
+        )}
 
         {/* Existing Time Slots List */}
         <div className="bg-white rounded-lg shadow-md p-6">
