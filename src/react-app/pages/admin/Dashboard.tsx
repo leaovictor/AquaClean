@@ -27,7 +27,7 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
-  const { currentUser, loading } = useAuth(); // Use currentUser and loading from new context
+  const { currentUser, loading, session } = useAuth(); // Use currentUser, loading, and session from new context
   const navigate = useNavigate();
   const [stats, setStats] = useState<AdminStats>({
     totalCustomers: 0,
@@ -48,26 +48,33 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (currentUser) { // Use currentUser
-      fetchAdminData();
+    if (currentUser && session) { // Use currentUser and session
+      fetchAdminData(session);
     }
-  }, [currentUser, loading, navigate]); // Update dependencies
+  }, [currentUser, loading, navigate, session]); // Update dependencies
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = async (currentSession: Session) => {
     try {
+      const token = currentSession.access_token;
+      const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+
       const [statsRes, appointmentsRes] = await Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/admin/recent-appointments")
+        fetch("/api/admin/stats", { headers }),
+        fetch("/api/admin/recent-appointments", { headers })
       ]);
 
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
+      } else {
+        console.error("Failed to fetch admin stats:", statsRes.status, statsRes.statusText);
       }
 
       if (appointmentsRes.ok) {
         const appointmentsData = await appointmentsRes.json();
         setRecentAppointments(appointmentsData);
+      } else {
+        console.error("Failed to fetch recent appointments:", appointmentsRes.status, appointmentsRes.statusText);
       }
     } catch (error) {
       console.error("Error fetching admin data:", error);
