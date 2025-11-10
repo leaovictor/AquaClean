@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import AdminNavigation from "@/react-app/components/AdminNavigation";
-import { Plus, Edit, Trash, Clock, Calendar } from "lucide-react";
+import { Plus, Edit, Trash } from "lucide-react";
+import { useAuth } from "@/react-app/AuthContext";
 
 interface TimeSlot {
-  id: number;
+  id?: number;
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -12,18 +13,24 @@ interface TimeSlot {
 }
 
 export default function Availability() {
+  const { session } = useAuth();
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
 
-  useEffect(() => {
-    fetchTimeSlots();
-  }, []);
+  const getHeaders = () => {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token}`,
+    };
+  };
 
   const fetchTimeSlots = async () => {
     try {
-      const response = await fetch("/api/admin-time-slots");
+      const response = await fetch("/api/admin-time-slots", {
+        headers: getHeaders(),
+      });
       if (response.ok) {
         const data = await response.json();
         setTimeSlots(data);
@@ -35,14 +42,20 @@ export default function Availability() {
     }
   };
 
+  useEffect(() => {
+    if (session) {
+      fetchTimeSlots();
+    }
+  }, [session]);
+
   const handleSave = async (slot: TimeSlot) => {
     const method = slot.id ? "PUT" : "POST";
-    const url = slot.id ? `/api/admin-time-slots` : "/api/admin-time-slots";
+    const url = "/api/admin-time-slots";
 
     try {
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify(slot),
       });
 
@@ -50,6 +63,8 @@ export default function Availability() {
         fetchTimeSlots();
         setShowModal(false);
         setEditingSlot(null);
+      } else {
+        console.error("Failed to save time slot:", response.statusText);
       }
     } catch (error) {
       console.error("Error saving time slot:", error);
@@ -61,12 +76,14 @@ export default function Availability() {
       try {
         const response = await fetch(`/api/admin-time-slots`, {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: getHeaders(),
           body: JSON.stringify({ id }),
         });
 
         if (response.ok) {
           fetchTimeSlots();
+        } else {
+          console.error("Failed to delete time slot:", response.statusText);
         }
       } catch (error) {
         console.error("Error deleting time slot:", error);
@@ -124,7 +141,7 @@ export default function Availability() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button onClick={() => { setEditingSlot(slot); setShowModal(true); }} className="text-indigo-600 hover:text-indigo-900"><Edit className="h-5 w-5" /></button>
-                      <button onClick={() => handleDelete(slot.id)} className="text-red-600 hover:text-red-900 ml-4"><Trash className="h-5 w-5" /></button>
+                      <button onClick={() => handleDelete(slot.id!)} className="text-red-600 hover:text-red-900 ml-4"><Trash className="h-5 w-5" /></button>
                     </td>
                   </tr>
                 ))}
@@ -145,8 +162,8 @@ export default function Availability() {
   );
 }
 
-function TimeSlotModal({ slot, onClose, onSave }) {
-  const [formData, setFormData] = useState(slot || {
+function TimeSlotModal({ slot, onClose, onSave }: { slot: TimeSlot | null, onClose: () => void, onSave: (slot: TimeSlot) => void }) {
+  const [formData, setFormData] = useState<TimeSlot>(slot || {
     day_of_week: 1,
     start_time: '09:00',
     end_time: '17:00',
@@ -154,12 +171,13 @@ function TimeSlotModal({ slot, onClose, onSave }) {
     is_available: true
   });
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
@@ -196,10 +214,10 @@ function TimeSlotModal({ slot, onClose, onSave }) {
             </label>
           </div>
           <div className="items-center px-4 py-3">
-            <button onClick={onClose} className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300">
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300">
               Close
             </button>
-            <button type="submit" className="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <button type="submit" className="ml-3 px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
               Save
             </button>
           </div>
