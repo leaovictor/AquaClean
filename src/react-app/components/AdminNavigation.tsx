@@ -22,6 +22,7 @@ export default function AdminNavigation() {
   const navItems = [
     { path: "/admin/dashboard", icon: BarChart3, label: "Dashboard" },
     { path: "/admin/appointments", icon: Calendar, label: "Appointments" },
+    { path: "/admin/availability", icon: Clock, label: "Availability" },
     { path: "/admin/customers", icon: Users, label: "Customers" },
     { path: "/admin/plans", icon: CreditCard, label: "Plans" },
     { path: "/admin/reports", icon: FileText, label: "Reports" },
