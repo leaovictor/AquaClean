@@ -44,11 +44,11 @@ serve(async (req) => {
     
     // Handle POST request to create a new appointment
     if (req.method === 'POST') {
-      const { vehicle_id, time_slot_id, service_type, special_instructions } = await req.json();
+      const { vehicle_id, time_slot_id, service_type, special_instructions, scheduled_at } = await req.json();
 
       // Basic validation for required fields
-      if (!vehicle_id || !time_slot_id || !service_type) {
-        return new Response(JSON.stringify({ error: 'Missing required fields: vehicle_id, time_slot_id, and service_type are required.' }), {
+      if (!vehicle_id || !time_slot_id || !service_type || !scheduled_at) {
+        return new Response(JSON.stringify({ error: 'Missing required fields: vehicle_id, time_slot_id, service_type, and scheduled_at are required.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
         });
@@ -86,6 +86,7 @@ serve(async (req) => {
           time_slot_id,
           service_type,
           special_instructions,
+          scheduled_at, // Include scheduled_at
           status: 'pending', // Default status
         })
         .select()
