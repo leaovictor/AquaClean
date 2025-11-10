@@ -12,6 +12,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [profile, setProfile] = useState<Partial<UserProfile>>({});
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
@@ -31,20 +32,27 @@ export default function Dashboard() {
       const token = session.access_token; // Get token from session
       const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
 
-      const [appointmentsRes, vehiclesRes] = await Promise.all([
+      const [appointmentsRes, vehiclesRes, timeSlotsRes, userRes] = await Promise.all([
         fetch(`${functionsBaseUrl}/appointments`, { headers }),
-        fetch(`${functionsBaseUrl}/vehicles`, { headers })
+        fetch(`${functionsBaseUrl}/vehicles`, { headers }),
+        fetch(`${functionsBaseUrl}/time-slots`, { headers }),
+        fetch(`${functionsBaseUrl}/users-me`, { headers })
       ]);
 
-      if (appointmentsRes.ok) {
-        const appointmentsData = await appointmentsRes.json();
-        setAppointments(appointmentsData.slice(0, 5)); // Show only recent 5
-      }
+      const appointmentsData = appointmentsRes.ok ? await appointmentsRes.json() : [];
+      const vehiclesData = vehiclesRes.ok ? await vehiclesRes.json() : [];
+      const timeSlotsData = timeSlotsRes.ok ? await timeSlotsRes.json() : [];
+      const userData = userRes.ok ? await userRes.json() : {};
 
-      if (vehiclesRes.ok) {
-        const vehiclesData = await vehiclesRes.json();
-        setVehicles(vehiclesData);
-      }
+      const enrichedAppointments = appointmentsData.map((apt: Appointment) => {
+        const vehicle = vehiclesData.find((v: Vehicle) => v.id === apt.vehicle_id);
+        const timeSlot = timeSlotsData.find((ts: any) => ts.id === apt.time_slot_id);
+        return { ...apt, vehicle, timeSlot };
+      });
+
+      setAppointments(enrichedAppointments.slice(0, 5));
+      setVehicles(vehiclesData);
+      setProfile(userData);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -73,7 +81,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {currentUser?.user_metadata?.full_name || currentUser?.email}!
+            Welcome back, {profile.first_name || currentUser?.email}!
           </h1>
           <p className="text-gray-600">
             Manage your car wash appointments and keep your vehicle sparkling clean.
@@ -158,7 +166,7 @@ export default function Dashboard() {
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                         <span className="font-medium text-gray-900">
-                          {appointment.date} at {appointment.time}
+                          {appointment.timeSlot?.date} at {appointment.timeSlot?.time}
                         </span>
                       </div>
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
@@ -166,7 +174,7 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <p className="text-gray-600 text-sm">
-                      {appointment.make} {appointment.model} {appointment.year && `(${appointment.year})`}
+                      {appointment.vehicle?.make} {appointment.vehicle?.model} {appointment.vehicle?.year && `(${appointment.vehicle?.year})`}
                     </p>
                   </div>
                 ))}

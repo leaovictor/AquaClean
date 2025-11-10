@@ -78,6 +78,9 @@ export const AppointmentSchema = z.object({
   status: z.enum(['scheduled', 'in_progress', 'completed', 'canceled']).default('scheduled'),
   special_instructions: z.string().optional(),
   total_price: z.number().optional(),
+  // Added properties for joined data
+  vehicle: VehicleSchema.optional(),
+  timeSlot: TimeSlotSchema.optional(),
 });
 
 export type Appointment = z.infer<typeof AppointmentSchema>;

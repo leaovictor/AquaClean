@@ -40,7 +40,43 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
-    } 
+    }
+
+    // Handle POST request to create a new appointment
+    if (req.method === 'POST') {
+      const { vehicle_id, time_slot_id, service_type, special_instructions } = await req.json();
+
+      // Validate input
+      if (!vehicle_id || !time_slot_id || !service_type) {
+        return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      // TODO: Add logic to verify that the selected time_slot_id is actually available
+      // and that the vehicle_id belongs to the authenticated user.
+
+      const { data: appointment, error } = await supabaseAdmin
+        .from('appointments')
+        .insert({
+          user_id: user.id,
+          vehicle_id,
+          time_slot_id,
+          service_type,
+          special_instructions,
+          status: 'scheduled', // Default status
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify(appointment), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 201, // 201 Created
+      });
+    }
     
     // Handle other methods
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
