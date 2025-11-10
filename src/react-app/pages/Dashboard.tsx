@@ -3,35 +3,37 @@ import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
 import { Calendar, Car, Clock, Plus, ChevronRight } from "lucide-react";
 import type { Appointment, Vehicle } from "@/shared/types";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
+import { useAuth } from "@/react-app/AuthContext";
+
+const functionsBaseUrl = 'https://ilfoxowzpibbgrpveqrs.supabase.co/functions/v1';
 
 export default function Dashboard() {
-  const { currentUser, loading } = useAuth(); // Use currentUser and loading from new context
+  const { currentUser, session, loading } = useAuth(); // Get session from context
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [dataLoading, setDataLoading] = useState(true); // Renamed to avoid conflict with auth loading
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
-    if (!currentUser && !loading) { // Use currentUser and loading
+    if (!currentUser && !loading) {
       navigate("/");
       return;
     }
 
-    if (currentUser) { // Use currentUser
+    if (currentUser) {
       fetchDashboardData();
     }
-  }, [currentUser, loading, navigate]); // Update dependencies
+  }, [currentUser, loading, navigate]);
 
   const fetchDashboardData = async () => {
-    if (!currentUser) return;
+    if (!session) return; // Use session for check
     try {
-      const token = await currentUser.getIdToken();
-      const headers = { 'Authorization': 'Bearer ' + token };
+      const token = session.access_token; // Get token from session
+      const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
 
       const [appointmentsRes, vehiclesRes] = await Promise.all([
-        fetch("/api/appointments", { headers }),
-        fetch("/api/vehicles", { headers })
+        fetch(`${functionsBaseUrl}/appointments`, { headers }),
+        fetch(`${functionsBaseUrl}/vehicles`, { headers })
       ]);
 
       if (appointmentsRes.ok) {
@@ -46,11 +48,11 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
-      setDataLoading(false); // Use dataLoading
+      setDataLoading(false);
     }
   };
 
-  if (loading || dataLoading) { // Use combined loading states
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center">
         <div className="animate-pulse text-blue-600">
@@ -71,7 +73,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {currentUser?.displayName || currentUser?.email}!
+            Welcome back, {currentUser?.user_metadata?.full_name || currentUser?.email}!
           </h1>
           <p className="text-gray-600">
             Manage your car wash appointments and keep your vehicle sparkling clean.
