@@ -57,6 +57,10 @@ export default function Booking() {
       if (timeSlotsRes.ok) {
         const timeSlotsData = await timeSlotsRes.json();
         setTimeSlots(timeSlotsData);
+      } else {
+        const errorData = await timeSlotsRes.json();
+        console.error("Error fetching time slots:", timeSlotsRes.status, errorData);
+        setMessage({ type: 'error', text: errorData.error || 'Failed to load time slots' });
       }
 
     } catch (error) {
