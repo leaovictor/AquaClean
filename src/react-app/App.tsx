@@ -10,6 +10,7 @@ import AdminAppointmentsPage from "@/react-app/pages/admin/Appointments";
 import AdminCustomersPage from "@/react-app/pages/admin/Customers";
 import AdminPlansPage from "@/react-app/pages/admin/Plans";
 import AdminReportsPage from "@/react-app/pages/admin/Reports";
+import AdminTimeSlotsPage from "@/react-app/pages/admin/TimeSlots"; // Import AdminTimeSlotsPage
 import SignIn from "@/react-app/pages/SignIn"; // Import SignIn component
 import SignUp from "@/react-app/pages/SignUp"; // Import SignUp component
 
@@ -112,6 +113,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AdminReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/time-slots" // Add route for AdminTimeSlotsPage
+            element={
+              <ProtectedRoute>
+                <AdminTimeSlotsPage />
               </ProtectedRoute>
             }
           />
