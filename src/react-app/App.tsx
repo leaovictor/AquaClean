@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthContextProvider, useAuth } from "@/react-app/AuthContext"; // Import AuthContextProvider and useAuth
 import HomePage from "@/react-app/pages/Home";
-import AuthCallbackPage from "@/react-app/pages/AuthCallback";
 import DashboardPage from "@/react-app/pages/Dashboard";
 import BookingPage from "@/react-app/pages/Booking";
 import ProfilePage from "@/react-app/pages/Profile";
@@ -34,7 +33,6 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/signin" element={<SignIn />} /> {/* Add SignIn route */}
           <Route path="/signup" element={<SignUp />} /> {/* Add SignUp route */}
           <Route

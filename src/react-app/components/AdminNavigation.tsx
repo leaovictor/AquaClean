@@ -2,17 +2,17 @@ import { useNavigate, useLocation } from "react-router";
 import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, Settings, Bell } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
-import { signOut } from "firebase/auth"; // Import signOut from firebase/auth
+import { supabase } from "@/shared/supabase"; // Import supabase
 
 export default function AdminNavigation() {
-  const { currentUser, auth } = useAuth(); // Use currentUser and auth from new context
+  const { currentUser } = useAuth(); // Use currentUser from new context
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth); // Use Firebase signOut
+      await supabase.auth.signOut(); // Use Supabase signOut
       navigate("/");
     } catch (error) {
       console.error("Error signing out:", error);
