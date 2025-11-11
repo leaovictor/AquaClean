@@ -91,8 +91,8 @@ serve(async (req) => {
       .select('id, day_of_week, start_time, end_time, is_available');
 
     if (rulesError) {
-      console.error('Supabase error fetching rules:', rulesError);
-      throw rulesError;
+      console.error('Supabase error fetching availability rules:', rulesError);
+      throw new Error(`Failed to fetch availability rules: ${rulesError.message}`);
     }
     
     // 3. Geração de Slots
@@ -105,7 +105,7 @@ serve(async (req) => {
 
     if (appointmentsError) {
       console.error('Supabase error fetching appointments:', appointmentsError);
-      throw appointmentsError;
+      throw new Error(`Failed to fetch appointments: ${appointmentsError.message}`);
     }
 
     const bookedSlotIds = appointments.map(a => a.time_slot_id);

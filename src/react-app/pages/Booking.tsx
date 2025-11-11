@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
 import { Calendar, Car, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import type { Vehicle, TimeSlot } from "@/shared/types";
+import type { Vehicle, TimeSlot, Appointment } from "@/shared/types";
 import { useAuth } from "@/react-app/AuthContext";
 
 const functionsBaseUrl = 'https://ilfoxowzpibbgrpveqrs.supabase.co/functions/v1';
@@ -54,16 +54,28 @@ export default function Booking() {
         } else if (vehiclesData.length > 0) {
           setSelectedVehicle(vehiclesData[0].id);
         }
+      } else {
+        const errorData = await vehiclesRes.json();
+        console.error("Error fetching vehicles:", errorData);
+        setMessage({ type: 'error', text: errorData.error || 'Failed to load vehicles' });
       }
 
       if (timeSlotsRes.ok) {
         const timeSlotsData = await timeSlotsRes.json();
         setTimeSlots(timeSlotsData);
+      } else {
+        const errorData = await timeSlotsRes.json();
+        console.error("Error fetching time slots:", errorData);
+        setMessage({ type: 'error', text: errorData.error || 'Failed to load time slots' });
       }
 
       if (appointmentsRes.ok) {
         const appointmentsData = await appointmentsRes.json();
         setAppointments(appointmentsData);
+      } else {
+        const errorData = await appointmentsRes.json();
+        console.error("Error fetching appointments:", errorData);
+        setMessage({ type: 'error', text: errorData.error || 'Failed to load appointments' });
       }
 
     } catch (error) {
