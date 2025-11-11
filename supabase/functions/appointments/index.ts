@@ -3,31 +3,26 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
-  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Create a Supabase client with the user's auth context
     const userSupabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    // Get the user from the token
     const { data: { user }, error: userError } = await userSupabaseClient.auth.getUser();
     if (userError) throw userError;
     if (!user) throw new Error("User not found");
 
-    // Create an admin client to bypass RLS for database operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Handle GET request to fetch appointments
     if (req.method === 'GET') {
       const { data, error } = await supabaseAdmin
         .from('appointments')
@@ -42,43 +37,67 @@ serve(async (req) => {
       });
     }
 
-    // Handle POST request to create a new appointment
     if (req.method === 'POST') {
-      const { vehicle_id, time_slot_id, service_type, special_instructions } = await req.json();
+      const { vehicle_id, appointment_time, service_type, special_instructions } = await req.json();
 
-      // Validate input
-      if (!vehicle_id || !time_slot_id || !service_type) {
+      if (!vehicle_id || !appointment_time || !service_type) {
         return new Response(JSON.stringify({ error: 'Missing required fields' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
         });
       }
 
-      // TODO: Add logic to verify that the selected time_slot_id is actually available
-      // and that the vehicle_id belongs to the authenticated user.
+      const targetDate = new Date(appointment_time);
 
-      const { data: appointment, error } = await supabaseAdmin
+      const { count: vehicleCount, error: vehicleError } = await supabaseAdmin
+        .from('vehicles')
+        .select('*', { count: 'exact', head: true })
+        .eq('id', vehicle_id)
+        .eq('user_id', user.id);
+
+      if (vehicleError) throw vehicleError;
+      if (vehicleCount === 0) {
+        return new Response(JSON.stringify({ error: 'Vehicle not found or does not belong to the user' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        });
+      }
+
+      const { count: existingAppointment, error: existingError } = await supabaseAdmin
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('appointment_time', targetDate.toISOString())
+        .in('status', ['scheduled', 'confirmed']);
+
+      if (existingError) throw existingError;
+      if (existingAppointment > 0) {
+        return new Response(JSON.stringify({ error: 'The selected time slot is no longer available' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409, // 409 Conflict
+        });
+      }
+
+      const { data: appointment, error: insertError } = await supabaseAdmin
         .from('appointments')
         .insert({
           user_id: user.id,
           vehicle_id,
-          time_slot_id,
+          appointment_time: targetDate.toISOString(),
           service_type,
           special_instructions,
-          status: 'scheduled', // Default status
+          status: 'scheduled',
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
       return new Response(JSON.stringify(appointment), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201, // 201 Created
+        status: 201,
       });
     }
     
-    // Handle other methods
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 405,

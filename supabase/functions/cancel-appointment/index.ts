@@ -9,6 +9,12 @@ serve(async (req) => {
 
   try {
     const { appointment_id } = await req.json();
+    if (!appointment_id) {
+      return new Response(JSON.stringify({ error: 'appointment_id is required' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -17,13 +23,20 @@ serve(async (req) => {
 
     const { data: appointment, error: appointmentError } = await supabaseAdmin
       .from('appointments')
-      .select('*, time_slots(*)')
+      .select('appointment_time')
       .eq('id', appointment_id)
       .single();
 
     if (appointmentError) throw appointmentError;
 
-    const appointmentTime = new Date(`${appointment.time_slots.date}T${appointment.time_slots.time}:00`);
+    if (!appointment) {
+      return new Response(JSON.stringify({ error: 'Appointment not found' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404,
+      });
+    }
+
+    const appointmentTime = new Date(appointment.appointment_time);
     const now = new Date();
     const oneHour = 60 * 60 * 1000;
 
