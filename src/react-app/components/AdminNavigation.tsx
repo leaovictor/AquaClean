@@ -1,18 +1,18 @@
 import { useNavigate, useLocation } from "react-router";
 import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, Settings, Bell, Clock } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
-import { signOut } from "firebase/auth"; // Import signOut from firebase/auth
+import { useAuth } from "@/react-app/AuthContext";
+import { supabase } from "@/shared/supabase"; // Import supabase client
 
 export default function AdminNavigation() {
-  const { currentUser, auth } = useAuth(); // Use currentUser and auth from new context
+  const { currentUser } = useAuth(); // Remove 'auth' from destructuring
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth); // Use Firebase signOut
+      await supabase.auth.signOut(); // Use Supabase signOut
       navigate("/");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -33,9 +33,9 @@ export default function AdminNavigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div 
+          <Link
+            to="/admin/dashboard"
             className="flex items-center space-x-3 cursor-pointer"
-            onClick={() => navigate("/admin/dashboard")}
           >
             <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-2 rounded-xl">
               <Car className="w-6 h-6 text-white" />
@@ -46,7 +46,7 @@ export default function AdminNavigation() {
               </h1>
               <span className="text-xs text-gray-400">Painel Administrativo</span>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
