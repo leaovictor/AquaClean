@@ -119,9 +119,9 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Painel</h1>
           <p className="text-gray-600">
-            Welcome back! Here's what's happening with your car wash business.
+            Bem-vindo(a) de volta! Veja o que está acontecendo com seu negócio de lavagem de carros.
           </p>
         </div>
 
@@ -137,8 +137,8 @@ export default function AdminDashboard() {
                 {stats.totalCustomers}
               </span>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Total Customers</h3>
-            <p className="text-gray-600 text-sm">Registered users</p>
+            <h3 className="text-lg font-semibold text-gray-900">Total de Clientes</h3>
+            <p className="text-gray-600 text-sm">Usuários registrados</p>
           </div>
 
           {/* Active Subscriptions */}
@@ -151,8 +151,8 @@ export default function AdminDashboard() {
                 {stats.activeSubscriptions}
               </span>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Active Plans</h3>
-            <p className="text-gray-600 text-sm">Subscription customers</p>
+            <h3 className="text-lg font-semibold text-gray-900">Planos Ativos</h3>
+            <p className="text-gray-600 text-sm">Clientes com assinatura</p>
           </div>
 
           {/* Today's Appointments */}
@@ -165,8 +165,8 @@ export default function AdminDashboard() {
                 {stats.todayAppointments}
               </span>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Today's Jobs</h3>
-            <p className="text-gray-600 text-sm">Scheduled appointments</p>
+            <h3 className="text-lg font-semibold text-gray-900">Agendamentos de Hoje</h3>
+            <p className="text-gray-600 text-sm">Agendamentos programados</p>
           </div>
 
           {/* Monthly Revenue */}
@@ -191,63 +191,62 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Monthly Revenue</h3>
-            <p className="text-gray-600 text-sm">This month's earnings</p>
+            <h3 className="text-lg font-semibold text-gray-900">Receita Mensal</h3>
+            <p className="text-gray-600 text-sm">Ganhos deste mês</p>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Appointment Status Overview */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Appointment Status</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Status dos Agendamentos</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                  <span className="font-medium text-gray-900">Completed</span>
-                </div>
-                <span className="text-2xl font-bold text-green-600">
-                  {stats.completedAppointments}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                <div className="flex items-center space-x-3">
-                  <Clock className="w-6 h-6 text-blue-600" />
-                  <span className="font-medium text-gray-900">Pending</span>
-                </div>
-                <span className="text-2xl font-bold text-blue-600">
-                  {stats.pendingAppointments}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                  <span className="font-medium text-gray-900">Canceled</span>
-                </div>
-                <span className="text-2xl font-bold text-red-600">
-                  {stats.canceledAppointments}
-                </span>
-              </div>
-            </div>
-            
-            <button
-              onClick={() => navigate("/admin/appointments")}
-              className="w-full mt-6 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition-colors"
-            >
-              View All Appointments
-            </button>
-          </div>
+                              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
+                              <div className="flex items-center space-x-3">
+                                <CheckCircle className="w-6 h-6 text-green-600" />
+                                <span className="font-medium text-gray-900">Concluídos</span>
+                              </div>
+                              <span className="text-2xl font-bold text-green-600">
+                                {stats.completedAppointments}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
+                              <div className="flex items-center space-x-3">
+                                <Clock className="w-6 h-6 text-blue-600" />
+                                <span className="font-medium text-gray-900">Pendentes</span>
+                              </div>
+                              <span className="text-2xl font-bold text-blue-600">
+                                {stats.pendingAppointments}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
+                              <div className="flex items-center space-x-3">
+                                <AlertTriangle className="w-6 h-6 text-red-600" />
+                                <span className="font-medium text-gray-900">Cancelados</span>
+                              </div>
+                              <span className="text-2xl font-bold text-red-600">
+                                {stats.canceledAppointments}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={() => navigate("/admin/appointments")}
+                            className="w-full mt-6 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition-colors"
+                          >
+                            Ver Todos os Agendamentos
+                          </button>          </div>
 
           {/* Recent Appointments */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Appointments</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Agendamentos Recentes</h2>
             
             {recentAppointments.length === 0 ? (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No recent appointments</p>
+                <p className="text-gray-600">Nenhum agendamento recente</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -279,7 +278,7 @@ export default function AdminDashboard() {
               onClick={() => navigate("/admin/appointments")}
               className="w-full mt-6 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition-colors"
             >
-              View All Recent Activity
+              Ver Toda a Atividade Recente
             </button>
           </div>
         </div>
@@ -291,8 +290,8 @@ export default function AdminDashboard() {
             className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white p-6 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl group"
           >
             <Calendar className="w-8 h-8 mb-3" />
-            <h3 className="text-lg font-semibold">Manage Appointments</h3>
-            <p className="text-blue-100 text-sm mt-1">View and update bookings</p>
+            <h3 className="text-lg font-semibold">Gerenciar Agendamentos</h3>
+            <p className="text-blue-100 text-sm mt-1">Visualizar e atualizar reservas</p>
           </button>
           
           <button
@@ -300,8 +299,8 @@ export default function AdminDashboard() {
             className="bg-white hover:bg-gray-50 border-2 border-gray-200 p-6 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl group"
           >
             <Users className="w-8 h-8 text-blue-600 mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Customer Management</h3>
-            <p className="text-gray-600 text-sm mt-1">View customer profiles</p>
+            <h3 className="text-lg font-semibold text-gray-900">Gerenciamento de Clientes</h3>
+            <p className="text-gray-600 text-sm mt-1">Visualizar perfis de clientes</p>
           </button>
           
           <button
@@ -309,8 +308,8 @@ export default function AdminDashboard() {
             className="bg-white hover:bg-gray-50 border-2 border-gray-200 p-6 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl group"
           >
             <Car className="w-8 h-8 text-blue-600 mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Subscription Plans</h3>
-            <p className="text-gray-600 text-sm mt-1">Manage pricing and features</p>
+            <h3 className="text-lg font-semibold text-gray-900">Planos de Assinatura</h3>
+            <p className="text-gray-600 text-sm mt-1">Gerenciar preços e recursos</p>
           </button>
           
           <button
@@ -318,8 +317,8 @@ export default function AdminDashboard() {
             className="bg-white hover:bg-gray-50 border-2 border-gray-200 p-6 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl group"
           >
             <BarChart3 className="w-8 h-8 text-blue-600 mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Analytics & Reports</h3>
-            <p className="text-gray-600 text-sm mt-1">Business insights</p>
+            <h3 className="text-lg font-semibold text-gray-900">Análises e Relatórios</h3>
+            <p className="text-gray-600 text-sm mt-1">Insights de negócios</p>
           </button>
         </div>
       </div>
