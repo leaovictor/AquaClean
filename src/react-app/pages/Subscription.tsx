@@ -41,14 +41,14 @@ export default function Subscription() {
       // }
     } catch (error) {
       console.error("Error fetching subscription data:", error);
-      setMessage({ type: 'error', text: 'Failed to load subscription data' });
+      setMessage({ type: 'error', text: 'Falha ao carregar dados da assinatura' });
     } finally {
       setDataLoading(false); // Use dataLoading
     }
   };
 
   const handleSelectPlan = async () => {
-    setMessage({ type: 'success', text: 'Subscription feature coming soon! For now, you can book individual appointments.' });
+    setMessage({ type: 'success', text: 'Recurso de assinatura em breve! Por enquanto, você pode agendar compromissos individuais.' });
     
     // TODO: Implement Stripe integration
     // try {
@@ -90,10 +90,10 @@ export default function Subscription() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Choose Your Plan
+            Escolha Seu Plano
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Save money with our flexible subscription plans. More washes, better value, and priority booking.
+            Economize com nossos planos de assinatura flexíveis. Mais lavagens, melhor custo-benefício e agendamento prioritário.
           </p>
         </div>
 
@@ -113,19 +113,19 @@ export default function Subscription() {
         {/* Current Subscription */}
         {currentSubscription && (
           <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Current Subscription</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Assinatura Atual</h2>
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">
                   {/* Plan name would come from joined data */}
-                  Active Plan
+                  Plano Ativo
                 </p>
                 <p className="text-gray-600 text-sm">
-                  {currentSubscription.remaining_washes} washes remaining
+                  {currentSubscription.remaining_washes} lavagens restantes
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500">Next billing</p>
+                <p className="text-sm text-gray-500">Próxima cobrança</p>
                 <p className="font-medium text-gray-900">
                   {currentSubscription.current_period_end 
                     ? new Date(currentSubscription.current_period_end).toLocaleDateString()
@@ -155,7 +155,7 @@ export default function Subscription() {
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-1">
                       <Star className="w-4 h-4" />
-                      <span>Most Popular</span>
+                      <span>Mais Popular</span>
                     </div>
                   </div>
                 )}
@@ -172,12 +172,12 @@ export default function Subscription() {
                       <span className="text-4xl font-bold text-gray-900">
                         ${plan.price}
                       </span>
-                      <span className="text-gray-600">/month</span>
+                      <span className="text-gray-600">/mês</span>
                     </div>
                     <div className="flex items-center justify-center space-x-2 text-blue-600">
                       <Calendar className="w-4 h-4" />
                       <span className="text-sm font-medium">
-                        {plan.washes_per_month} washes per month
+                        {plan.washes_per_month} lavagens por mês
                       </span>
                     </div>
                   </div>
@@ -202,8 +202,8 @@ export default function Subscription() {
                     }`}
                   >
                     {currentSubscription?.plan_id === plan.id 
-                      ? "Current Plan" 
-                      : "Select Plan"
+                      ? "Plano Atual" 
+                      : "Selecionar Plano"
                     }
                   </button>
                 </div>
@@ -215,65 +215,65 @@ export default function Subscription() {
         {/* Pay-Per-Wash Option */}
         <div className="mt-12 bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Prefer Pay-Per-Wash?
+            Prefere Pagar por Lavagem?
           </h3>
           <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Not ready for a subscription? You can always book individual car washes 
-            at our standard rates without any commitment.
+            Não está pronto para uma assinatura? Você sempre pode agendar lavagens de carro individuais 
+            com nossas tarifas padrão, sem compromisso.
           </p>
           <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">$15</div>
-              <div className="text-gray-600">Basic Wash</div>
+              <div className="text-gray-600">Lavagem Básica</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">$25</div>
-              <div className="text-gray-600">Premium Wash</div>
+              <div className="text-gray-600">Lavagem Premium</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">$45</div>
-              <div className="text-gray-600">Deluxe Detail</div>
+              <div className="text-gray-600">Detalhe Deluxe</div>
             </div>
           </div>
           <button
             onClick={() => navigate("/booking")}
             className="mt-6 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200"
           >
-            Book Single Wash
+            Agendar Lavagem Única
           </button>
         </div>
 
         {/* Subscription Benefits */}
         <div className="mt-12 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white">
           <h3 className="text-2xl font-bold text-center mb-8">
-            Why Choose a Subscription?
+            Por Que Escolher uma Assinatura?
           </h3>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-8 h-8" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">Save Money</h4>
+              <h4 className="text-xl font-semibold mb-2">Economize Dinheiro</h4>
               <p className="text-blue-100">
-                Get up to 40% off compared to individual wash pricing
+                Obtenha até 40% de desconto em comparação com os preços de lavagem individual
               </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Star className="w-8 h-8" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">Priority Booking</h4>
+              <h4 className="text-xl font-semibold mb-2">Agendamento Prioritário</h4>
               <p className="text-blue-100">
-                Skip the wait with priority access to time slots
+                Evite a espera com acesso prioritário aos horários
               </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check className="w-8 h-8" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">No Commitment</h4>
+              <h4 className="text-xl font-semibold mb-2">Sem Compromisso</h4>
               <p className="text-blue-100">
-                Cancel anytime with no hidden fees or penalties
+                Cancele a qualquer momento, sem taxas ocultas ou penalidades
               </p>
             </div>
           </div>
