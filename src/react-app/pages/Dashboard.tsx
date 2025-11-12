@@ -95,7 +95,7 @@ export default function Dashboard() {
   }
 
   const upcomingAppointments = appointments.filter(apt => apt.status === 'scheduled');
-  const recentAppointments = appointments.filter(apt => apt.status === 'completed').slice(0, 3);
+  const recentAppointments = appointments.filter(apt => apt.status === 'completed' || apt.status === 'canceled').slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
@@ -105,10 +105,10 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {profile.first_name || currentUser?.email}!
+            Bem-vindo(a) de volta, {profile.first_name || currentUser?.email}!
           </h1>
           <p className="text-gray-600">
-            Manage your car wash appointments and keep your vehicle sparkling clean.
+            Gerencie seus agendamentos de lavagem e mantenha seu veículo impecavelmente limpo.
           </p>
         </div>
 
@@ -122,8 +122,8 @@ export default function Dashboard() {
               <Calendar className="w-8 h-8" />
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">Book a Wash</h3>
-            <p className="text-blue-100">Schedule your next car wash</p>
+            <h3 className="text-lg font-semibold mb-1">Agendar uma Lavagem</h3>
+            <p className="text-blue-100">Agende sua próxima lavagem de carro</p>
           </button>
 
           <button
@@ -134,8 +134,8 @@ export default function Dashboard() {
               <Car className="w-8 h-8 text-blue-600" />
               <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <h3 className="text-lg font-semibold mb-1 text-gray-900">Manage Vehicles</h3>
-            <p className="text-gray-600">{vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''} registered</p>
+            <h3 className="text-lg font-semibold mb-1 text-gray-900">Gerenciar Veículos</h3>
+            <p className="text-gray-600">{vehicles.length} veículo{vehicles.length !== 1 ? 's' : ''} registrado{vehicles.length !== 1 ? 's' : ''}</p>
           </button>
 
           <button
@@ -146,8 +146,8 @@ export default function Dashboard() {
               <Clock className="w-8 h-8 text-blue-600" />
               <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <h3 className="text-lg font-semibold mb-1 text-gray-900">Subscription</h3>
-            <p className="text-gray-600">Manage your plan</p>
+            <h3 className="text-lg font-semibold mb-1 text-gray-900">Assinatura</h3>
+            <p className="text-gray-600">Gerenciar seu plano</p>
           </button>
         </div>
 
@@ -156,19 +156,19 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Upcoming Appointments
+                Próximos Agendamentos
               </h2>
             </div>
 
             {upcomingAppointments.length === 0 ? (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">No upcoming appointments</p>
+                <p className="text-gray-600 mb-4">Nenhum agendamento próximo</p>
                 <button
                   onClick={() => navigate("/booking")}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium transition-colors"
                 >
-                  Book Your First Wash
+                  Agende Sua Primeira Lavagem
                 </button>
               </div>
             ) : (
@@ -182,18 +182,24 @@ export default function Dashboard() {
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                         <span className="font-medium text-gray-900">
-                          {appointment.timeSlot?.date} at {appointment.timeSlot?.time}
+                          {new Date(appointment.start_time).toLocaleDateString('pt-BR', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })} at {new Date(appointment.start_time).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                           {appointment.service_type}
                         </span>
-                        {new Date(`${appointment.timeSlot?.date}T${appointment.timeSlot?.time}:00`).getTime() - new Date().getTime() > 60 * 60 * 1000 && (
-                          <button onClick={() => handleCancel(appointment.id)} className="text-red-500 hover:text-red-700">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button onClick={() => handleCancel(appointment.id)} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                     <p className="text-gray-600 text-sm">
@@ -208,13 +214,13 @@ export default function Dashboard() {
           {/* Recent Activity */}
           <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Recent Activity
+              Atividade Recente
             </h2>
 
             {recentAppointments.length === 0 ? (
               <div className="text-center py-8">
                 <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No recent activity</p>
+                <p className="text-gray-600">Nenhuma atividade recente</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -223,15 +229,23 @@ export default function Dashboard() {
                     key={appointment.id}
                     className="flex items-center space-x-4 p-4 border border-gray-200 rounded-xl"
                   >
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <Car className="w-5 h-5 text-green-600" />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      appointment.status === 'completed' ? 'bg-green-100' :
+                      appointment.status === 'canceled' ? 'bg-red-100' :
+                      'bg-blue-100'
+                    }`}>
+                      {appointment.status === 'completed' && <Car className="w-5 h-5 text-green-600" />}
+                      {appointment.status === 'canceled' && <Trash2 className="w-5 h-5 text-red-600" />}
+                      {appointment.status === 'scheduled' && <Calendar className="w-5 h-5 text-blue-600" />}
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">
-                        {appointment.service_type} wash completed
+                        {appointment.service_type} lavagem {appointment.status === 'completed' ? 'concluída' :
+                                                      appointment.status === 'canceled' ? 'cancelada' :
+                                                      'agendada'}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {appointment.make} {appointment.model} - {appointment.date}
+                        {appointment.vehicle?.make} {appointment.vehicle?.model} - {new Date(appointment.timeSlot?.date).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                   </div>
@@ -245,13 +259,13 @@ export default function Dashboard() {
         {vehicles.length > 0 && (
           <div className="mt-8 bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Your Vehicles</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Seus Veículos</h2>
               <button
                 onClick={() => navigate("/profile")}
                 className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 font-medium"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Vehicle</span>
+                <span>Adicionar Veículo</span>
               </button>
             </div>
 
@@ -276,7 +290,7 @@ export default function Dashboard() {
                   </div>
                   {vehicle.is_default && (
                     <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      Default
+                      Padrão
                     </span>
                   )}
                 </div>

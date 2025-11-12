@@ -33,7 +33,7 @@ export default function Home() {
               to="/signin"
               className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-2 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
             >
-              Sign In
+              Entrar
             </Link>
           </div>
         </div>
@@ -43,20 +43,20 @@ export default function Home() {
       <section className="pt-20 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Premium Car Wash
+            Lavagem Premium de Carros
             <span className="block bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              On Your Schedule
+              No Seu Horário
             </span>
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Experience the convenience of professional car washing with flexible scheduling,
-            subscription plans, and premium service quality.
+            Experimente a conveniência da lavagem profissional de carros com agendamento flexível,
+            planos de assinatura e qualidade de serviço premium.
           </p>
           <Link
             to="/signup"
             className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-200 shadow-xl hover:shadow-2xl group"
           >
-            Get Started Today
+            Comece Hoje
             <ChevronRight className="w-5 h-5 inline ml-2 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
@@ -66,7 +66,7 @@ export default function Home() {
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Why Choose AquaClean Pro?
+            Por Que Escolher AquaClean Pro?
           </h3>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-blue-100">
@@ -74,10 +74,10 @@ export default function Home() {
                 <Sparkles className="w-8 h-8 text-blue-600" />
               </div>
               <h4 className="text-xl font-semibold text-gray-900 mb-3">
-                Premium Quality
+                Qualidade Premium
               </h4>
               <p className="text-gray-600">
-                Professional-grade equipment and eco-friendly products ensure your car gets the best care possible.
+                Equipamentos de nível profissional e produtos ecológicos garantem que seu carro receba o melhor cuidado possível.
               </p>
             </div>
             
@@ -86,10 +86,10 @@ export default function Home() {
                 <Clock className="w-8 h-8 text-blue-600" />
               </div>
               <h4 className="text-xl font-semibold text-gray-900 mb-3">
-                Flexible Scheduling
+                Agendamento Flexível
               </h4>
               <p className="text-gray-600">
-                Book appointments that fit your schedule. Easy online booking with instant confirmation.
+                Agende horários que se encaixem na sua rotina. Agendamento online fácil com confirmação instantânea.
               </p>
             </div>
             
@@ -98,10 +98,10 @@ export default function Home() {
                 <Shield className="w-8 h-8 text-blue-600" />
               </div>
               <h4 className="text-xl font-semibold text-gray-900 mb-3">
-                Subscription Plans
+                Planos de Assinatura
               </h4>
               <p className="text-gray-600">
-                Save money with our flexible subscription plans. More washes, better value, priority booking.
+                Economize com nossos planos de assinatura flexíveis. Mais lavagens, melhor custo-benefício, agendamento prioritário.
               </p>
             </div>
           </div>
@@ -112,16 +112,16 @@ export default function Home() {
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-cyan-600">
         <div className="max-w-4xl mx-auto text-center">
           <h3 className="text-3xl font-bold text-white mb-4">
-            Ready to Get Started?
+            Pronto para Começar?
           </h3>
           <p className="text-blue-100 mb-8 text-lg">
-            Join thousands of satisfied customers who trust AquaClean Pro for their car care needs.
+            Junte-se a milhares de clientes satisfeitos que confiam na AquaClean Pro para suas necessidades de cuidado automotivo.
           </p>
           <Link
             to="/signup"
             className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-200 shadow-xl hover:shadow-2xl"
           >
-            Sign Up Now
+            Cadastre-se Agora
           </Link>
         </div>
       </section>
@@ -136,7 +136,7 @@ export default function Home() {
             <h4 className="text-xl font-bold">AquaClean Pro</h4>
           </div>
           <p className="text-gray-400">
-            Premium car wash scheduling and subscription service
+            Serviço premium de agendamento e assinatura de lavagem de carros
           </p>
         </div>
       </footer>

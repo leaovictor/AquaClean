@@ -93,7 +93,7 @@ export default function AdminCustomers() {
 
   const getCustomerAddress = (customer: AdminCustomer) => {
     const parts = [customer.address, customer.city, customer.state, customer.zip_code].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : 'No address';
+    return parts.length > 0 ? parts.join(', ') : 'Sem endereço';
   };
 
   if (loading || dataLoading) { // Use combined loading states
@@ -112,33 +112,33 @@ export default function AdminCustomers() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
-          <p className="text-gray-600">Manage customer accounts and view their activity.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Clientes</h1>
+          <p className="text-gray-600">Gerencie as contas dos clientes e visualize suas atividades.</p>
         </div>
 
         {/* Customer Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <div className="text-2xl font-bold text-gray-900">{customers.length}</div>
-            <p className="text-gray-600">Total Customers</p>
+            <p className="text-gray-600">Total de Clientes</p>
           </div>
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <div className="text-2xl font-bold text-gray-900">
               {customers.filter(c => c.subscription_status === 'active').length}
             </div>
-            <p className="text-gray-600">Active Subscribers</p>
+            <p className="text-gray-600">Assinantes Ativos</p>
           </div>
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <div className="text-2xl font-bold text-gray-900">
               ${customers.reduce((sum, c) => sum + c.total_spent, 0).toLocaleString()}
             </div>
-            <p className="text-gray-600">Total Revenue</p>
+            <p className="text-gray-600">Receita Total</p>
           </div>
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <div className="text-2xl font-bold text-gray-900">
               {(customers.reduce((sum, c) => sum + c.total_spent, 0) / customers.length || 0).toFixed(0)}
             </div>
-            <p className="text-gray-600">Avg. Spent per Customer</p>
+            <p className="text-gray-600">Gasto Médio por Cliente</p>
           </div>
         </div>
 
@@ -148,7 +148,7 @@ export default function AdminCustomers() {
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search customers by name or email..."
+              placeholder="Buscar clientes por nome ou e-mail..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -163,19 +163,19 @@ export default function AdminCustomers() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
+                    Cliente
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
+                    Contato
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Activity
+                    Atividade
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subscription
+                    Assinatura
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Ações
                   </th>
                 </tr>
               </thead>
@@ -189,7 +189,7 @@ export default function AdminCustomers() {
                         </div>
                         <div className="text-sm text-gray-500">{customer.email}</div>
                         <div className="text-xs text-gray-400">
-                          Joined {new Date(customer.created_at).toLocaleDateString()}
+                          Membro desde {new Date(customer.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </td>
@@ -213,14 +213,14 @@ export default function AdminCustomers() {
                       <div className="text-sm text-gray-900">
                         <div className="flex items-center mb-1">
                           <Car className="w-3 h-3 text-gray-400 mr-2" />
-                          {customer.vehicle_count} vehicle{customer.vehicle_count !== 1 ? 's' : ''}
+                          {customer.vehicle_count} veículo{customer.vehicle_count !== 1 ? 's' : ''}
                         </div>
                         <div className="flex items-center mb-1">
                           <Calendar className="w-3 h-3 text-gray-400 mr-2" />
-                          {customer.appointment_count} appointment{customer.appointment_count !== 1 ? 's' : ''}
+                          {customer.appointment_count} agendamento{customer.appointment_count !== 1 ? 's' : ''}
                         </div>
                         <div className="text-xs text-gray-500">
-                          ${customer.total_spent} total spent
+                          ${customer.total_spent} total gasto
                         </div>
                       </div>
                     </td>
@@ -234,7 +234,7 @@ export default function AdminCustomers() {
                           {customer.subscription_status}
                         </span>
                       ) : (
-                        <span className="text-sm text-gray-500">Pay per wash</span>
+                        <span className="text-sm text-gray-500">Pagamento por lavagem</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -257,7 +257,7 @@ export default function AdminCustomers() {
           {filteredCustomers.length === 0 && (
             <div className="text-center py-12">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No customers found</p>
+              <p className="text-gray-500">Nenhum cliente encontrado</p>
             </div>
           )}
         </div>
@@ -268,22 +268,22 @@ export default function AdminCustomers() {
             <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-2xl bg-white">
               <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Customer Details
+                  Detalhes do Cliente
                 </h3>
                 <p className="text-gray-600">{selectedCustomer.email}</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Personal Information</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Informações Pessoais</h4>
                   <div className="space-y-3">
-                    <p><span className="font-medium">Name:</span> {getCustomerName(selectedCustomer)}</p>
+                    <p><span className="font-medium">Nome:</span> {getCustomerName(selectedCustomer)}</p>
                     <p><span className="font-medium">Email:</span> {selectedCustomer.email}</p>
                     {selectedCustomer.phone && (
-                      <p><span className="font-medium">Phone:</span> {selectedCustomer.phone}</p>
+                      <p><span className="font-medium">Telefone:</span> {selectedCustomer.phone}</p>
                     )}
                     <div>
-                      <span className="font-medium">Address:</span>
+                      <span className="font-medium">Endereço:</span>
                       <div className="text-gray-600 text-sm mt-1">
                         {getCustomerAddress(selectedCustomer)}
                       </div>
@@ -292,14 +292,14 @@ export default function AdminCustomers() {
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Account Activity</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Atividade da Conta</h4>
                   <div className="space-y-3">
-                    <p><span className="font-medium">Member since:</span> {new Date(selectedCustomer.created_at).toLocaleDateString()}</p>
-                    <p><span className="font-medium">Vehicles:</span> {selectedCustomer.vehicle_count}</p>
-                    <p><span className="font-medium">Total appointments:</span> {selectedCustomer.appointment_count}</p>
-                    <p><span className="font-medium">Total spent:</span> ${selectedCustomer.total_spent}</p>
+                    <p><span className="font-medium">Membro desde:</span> {new Date(selectedCustomer.created_at).toLocaleDateString()}</p>
+                    <p><span className="font-medium">Veículos:</span> {selectedCustomer.vehicle_count}</p>
+                    <p><span className="font-medium">Total de agendamentos:</span> {selectedCustomer.appointment_count}</p>
+                    <p><span className="font-medium">Total gasto:</span> ${selectedCustomer.total_spent}</p>
                     {selectedCustomer.last_appointment && (
-                      <p><span className="font-medium">Last appointment:</span> {new Date(selectedCustomer.last_appointment).toLocaleDateString()}</p>
+                      <p><span className="font-medium">Último agendamento:</span> {new Date(selectedCustomer.last_appointment).toLocaleDateString()}</p>
                     )}
                   </div>
                 </div>
@@ -307,7 +307,7 @@ export default function AdminCustomers() {
 
               {selectedCustomer.subscription_status && (
                 <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Subscription</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Assinatura</h4>
                   <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
                     selectedCustomer.subscription_status === 'active' 
                       ? 'bg-green-100 text-green-800' 
@@ -323,14 +323,14 @@ export default function AdminCustomers() {
                   onClick={() => setShowModal(false)}
                   className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
                 >
-                  Close
+                  Fechar
                 </button>
                 <button
                   onClick={() => window.open(`mailto:${selectedCustomer.email}`)}
                   className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center space-x-2"
                 >
                   <Mail className="w-4 h-4" />
-                  <span>Email Customer</span>
+                  <span>Enviar E-mail ao Cliente</span>
                 </button>
               </div>
             </div>

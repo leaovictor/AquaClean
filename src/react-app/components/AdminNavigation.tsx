@@ -20,12 +20,12 @@ export default function AdminNavigation() {
   };
 
   const navItems = [
-    { path: "/admin/dashboard", icon: BarChart3, label: "Dashboard" },
-    { path: "/admin/appointments", icon: Calendar, label: "Appointments" },
-    { path: "/admin/availability", icon: Clock, label: "Availability" },
-    { path: "/admin/customers", icon: Users, label: "Customers" },
-    { path: "/admin/plans", icon: CreditCard, label: "Plans" },
-    { path: "/admin/reports", icon: FileText, label: "Reports" },
+    { path: "/admin/dashboard", icon: BarChart3, label: "Painel" },
+    { path: "/admin/appointments", icon: Calendar, label: "Agendamentos" },
+    { path: "/admin/availability", icon: Clock, label: "Disponibilidade" },
+    { path: "/admin/customers", icon: Users, label: "Clientes" },
+    { path: "/admin/plans", icon: CreditCard, label: "Planos" },
+    { path: "/admin/reports", icon: FileText, label: "Relatórios" },
   ];
 
   return (
@@ -44,7 +44,7 @@ export default function AdminNavigation() {
               <h1 className="text-xl font-bold text-white">
                 AquaClean Pro
               </h1>
-              <span className="text-xs text-gray-400">Admin Panel</span>
+              <span className="text-xs text-gray-400">Painel Administrativo</span>
             </div>
           </div>
 
@@ -92,7 +92,7 @@ export default function AdminNavigation() {
                   </div>
                 )}
                 <span className="hidden sm:block font-medium text-gray-300">
-                  {currentUser?.displayName || 'Admin'} {/* Use currentUser.displayName */}
+                  {currentUser?.displayName || 'Administrador'} {/* Use currentUser.displayName */}
                 </span>
               </button>
 
@@ -106,7 +106,7 @@ export default function AdminNavigation() {
                     className="w-full flex items-center space-x-2 px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                   >
                     <Car className="w-4 h-4" />
-                    <span>Customer View</span>
+                    <span>Visualização do Cliente</span>
                   </button>
                   <div className="border-t border-gray-700 my-1"></div>
                   <button
@@ -117,7 +117,7 @@ export default function AdminNavigation() {
                     className="w-full flex items-center space-x-2 px-4 py-2 text-red-400 hover:bg-gray-700 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
+                    <span>Sair</span>
                   </button>
                 </div>
               )}

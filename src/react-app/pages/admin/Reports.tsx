@@ -123,8 +123,8 @@ export default function AdminReports() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics & Reports</h1>
-            <p className="text-gray-600">Business insights and performance metrics.</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Análises e Relatórios</h1>
+            <p className="text-gray-600">Insights de negócios e métricas de desempenho.</p>
           </div>
           <div className="flex items-center space-x-4">
             <select
@@ -132,10 +132,10 @@ export default function AdminReports() {
               onChange={(e) => setDateRange(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="365">Last year</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="365">Último ano</option>
             </select>
             <div className="flex space-x-2">
               <button
@@ -182,7 +182,7 @@ export default function AdminReports() {
             <h3 className="text-2xl font-bold text-gray-900">
               ${reportData.revenue.current_month.toLocaleString()}
             </h3>
-            <p className="text-gray-600">Monthly Revenue</p>
+            <p className="text-gray-600">Receita Mensal</p>
           </div>
 
           {/* Customers */}
@@ -209,9 +209,9 @@ export default function AdminReports() {
             <h3 className="text-2xl font-bold text-gray-900">
               {reportData.customers.total}
             </h3>
-            <p className="text-gray-600">Total Customers</p>
+            <p className="text-gray-600">Total de Clientes</p>
             <p className="text-sm text-gray-500 mt-1">
-              +{reportData.customers.new_this_month} new this month
+              +{reportData.customers.new_this_month} novos este mês
             </p>
           </div>
 
@@ -222,15 +222,15 @@ export default function AdminReports() {
                 <Calendar className="w-6 h-6 text-purple-600" />
               </div>
               <span className="text-sm font-medium text-purple-600">
-                {reportData.appointments.completion_rate}% completion
+                {reportData.appointments.completion_rate}% de conclusão
               </span>
             </div>
             <h3 className="text-2xl font-bold text-gray-900">
               {reportData.appointments.total_this_month}
             </h3>
-            <p className="text-gray-600">This Month</p>
+            <p className="text-gray-600">Este Mês</p>
             <p className="text-sm text-gray-500 mt-1">
-              {reportData.appointments.completed} completed, {reportData.appointments.canceled} canceled
+              {reportData.appointments.completed} concluídos, {reportData.appointments.canceled} cancelados
             </p>
           </div>
 
@@ -247,14 +247,14 @@ export default function AdminReports() {
                 : '0'
               }
             </h3>
-            <p className="text-gray-600">Avg. Order Value</p>
+            <p className="text-gray-600">Valor Médio do Pedido</p>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
           {/* Revenue Trend */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Revenue Trend</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Tendência de Receita</h3>
             <div className="space-y-4">
               {reportData.revenue.daily_revenue.slice(-7).map((day, index) => (
                 <div key={index} className="flex items-center justify-between">
@@ -281,16 +281,16 @@ export default function AdminReports() {
 
           {/* Popular Services */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Popular Services</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Serviços Populares</h3>
             <div className="space-y-4">
               {reportData.popular_services.map((service, index) => (
                 <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
                   <div>
                     <p className="font-medium text-gray-900 capitalize">
-                      {service.service_type} Wash
+                      {service.service_type} Lavagem
                     </p>
                     <p className="text-sm text-gray-600">
-                      {service.count} bookings
+                      {service.count} agendamentos
                     </p>
                   </div>
                   <div className="text-right">
@@ -298,7 +298,7 @@ export default function AdminReports() {
                       ${service.revenue}
                     </p>
                     <p className="text-sm text-gray-600">
-                      revenue
+                      receita
                     </p>
                   </div>
                 </div>
@@ -307,7 +307,7 @@ export default function AdminReports() {
               {reportData.popular_services.length === 0 && (
                 <div className="text-center py-8">
                   <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No service data available</p>
+                  <p className="text-gray-500">Nenhum dado de serviço disponível</p>
                 </div>
               )}
             </div>
@@ -316,16 +316,16 @@ export default function AdminReports() {
 
         {/* Monthly Trends */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Monthly Trends</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Tendências Mensais</h3>
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 text-gray-600 font-medium">Month</th>
-                  <th className="text-right py-3 text-gray-600 font-medium">Appointments</th>
-                  <th className="text-right py-3 text-gray-600 font-medium">Revenue</th>
-                  <th className="text-right py-3 text-gray-600 font-medium">New Customers</th>
-                  <th className="text-right py-3 text-gray-600 font-medium">Avg. Order</th>
+                  <th className="text-left py-3 text-gray-600 font-medium">Mês</th>
+                  <th className="text-right py-3 text-gray-600 font-medium">Agendamentos</th>
+                  <th className="text-right py-3 text-gray-600 font-medium">Receita</th>
+                  <th className="text-right py-3 text-gray-600 font-medium">Novos Clientes</th>
+                  <th className="text-right py-3 text-gray-600 font-medium">Pedido Médio</th>
                 </tr>
               </thead>
               <tbody>
@@ -346,7 +346,7 @@ export default function AdminReports() {
             {reportData.monthly_trends.length === 0 && (
               <div className="text-center py-8">
                 <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No trend data available</p>
+                <p className="text-gray-500">Nenhum dado de tendência disponível</p>
               </div>
             )}
           </div>

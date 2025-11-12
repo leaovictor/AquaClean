@@ -93,7 +93,14 @@ export default function Booking() {
       }
 
       if (timeSlotsData) {
-        setTimeSlots(timeSlotsData);
+        const now = new Date();
+        const filteredTimeSlots = timeSlotsData.filter((slot: TimeSlot) => {
+          const [year, month, day] = slot.date.split('-').map(Number);
+          const [hours, minutes] = slot.time.split(':').map(Number);
+          const slotDateTime = new Date(year, month - 1, day, hours, minutes);
+          return slotDateTime > now;
+        });
+        setTimeSlots(filteredTimeSlots);
       }
 
       if (appointmentsData) {
@@ -232,22 +239,22 @@ export default function Booking() {
   const serviceTypes = [
     {
       id: "basic",
-      name: "Basic Wash",
-      description: "Exterior wash with rinse and dry",
+      name: "Lavagem Básica",
+      description: "Lavagem externa com enxágue e secagem",
       price: "$15",
       duration: "20 min"
     },
     {
       id: "premium",
-      name: "Premium Wash",
-      description: "Interior and exterior cleaning with tire shine",
+      name: "Lavagem Premium",
+      description: "Limpeza interna e externa com brilho nos pneus",
       price: "$25",
       duration: "35 min"
     },
     {
       id: "deluxe",
-      name: "Deluxe Detail",
-      description: "Complete detailing with wax and interior deep clean",
+      name: "Detalhe Deluxe",
+      description: "Detalhe completo com cera e limpeza interna profunda",
       price: "$45",
       duration: "60 min"
     }

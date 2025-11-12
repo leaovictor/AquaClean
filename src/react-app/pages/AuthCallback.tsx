@@ -52,10 +52,10 @@ export default function AuthCallback() {
           <Loader2 className="w-8 h-8 text-blue-600" />
         </div>
         <h2 className="text-xl font-semibold text-gray-800 mb-2">
-          Completing Sign In
+          Concluindo Login
         </h2>
         <p className="text-gray-600">
-          Please wait while we set up your account...
+          Por favor, aguarde enquanto configuramos sua conta...
         </p>
       </div>
     </div>

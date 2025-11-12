@@ -79,7 +79,7 @@ export default function Profile() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      setMessage({ type: 'error', text: 'Failed to load profile data' });
+      setMessage({ type: 'error', text: 'Falha ao carregar dados do perfil' });
     } finally {
       setDataLoading(false);
     }
@@ -102,16 +102,16 @@ export default function Profile() {
       });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
         setIsEditing(false);
         fetchData();
       } else {
         const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Failed to update profile' });
+        setMessage({ type: 'error', text: errorData.error || 'Falha ao atualizar perfil' });
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      setMessage({ type: 'error', text: 'Failed to update profile' });
+      setMessage({ type: 'error', text: 'Falha ao atualizar perfil' });
     }
   };
 
@@ -121,13 +121,13 @@ export default function Profile() {
     setMessage(null);
 
     if (!vehicleForm.make || !vehicleForm.model || !vehicleForm.year) {
-      setMessage({ type: 'error', text: 'Make, model, and year are required' });
+      setMessage({ type: 'error', text: 'Marca, modelo e ano são obrigatórios' });
       return;
     }
 
     const year = parseInt(vehicleForm.year);
     if (isNaN(year)) {
-      setMessage({ type: 'error', text: 'Please enter a valid year' });
+      setMessage({ type: 'error', text: 'Por favor, insira um ano válido' });
       return;
     }
 
@@ -148,7 +148,7 @@ export default function Profile() {
       });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Vehicle added successfully!' });
+        setMessage({ type: 'success', text: 'Veículo adicionado com sucesso!' });
         setShowVehicleForm(false);
         setVehicleForm({
           make: "",
@@ -161,11 +161,11 @@ export default function Profile() {
         fetchData();
       } else {
         const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Failed to add vehicle' });
+        setMessage({ type: 'error', text: errorData.error || 'Falha ao adicionar veículo' });
       }
     } catch (error) {
       console.error("Error adding vehicle:", error);
-      setMessage({ type: 'error', text: 'Failed to add vehicle' });
+      setMessage({ type: 'error', text: 'Falha ao adicionar veículo' });
     }
   };
 
@@ -185,8 +185,8 @@ export default function Profile() {
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile Settings</h1>
-          <p className="text-gray-600">Manage your personal information and vehicles.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Configurações de Perfil</h1>
+          <p className="text-gray-600">Gerencie suas informações pessoais e veículos.</p>
         </div>
 
         {message && (
@@ -209,14 +209,14 @@ export default function Profile() {
         {/* Profile Information */}
         <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Personal Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Informações Pessoais</h2>
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
               >
                 <Edit2 className="w-4 h-4" />
-                <span>Edit</span>
+                <span>Editar</span>
               </button>
             )}
           </div>
@@ -226,7 +226,7 @@ export default function Profile() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    First Name
+                    Nome
                   </label>
                   <input
                     type="text"
@@ -237,7 +237,7 @@ export default function Profile() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Name
+                    Sobrenome
                   </label>
                   <input
                     type="text"
@@ -250,7 +250,7 @@ export default function Profile() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone
+                  Telefone
                 </label>
                 <input
                   type="tel"
@@ -262,7 +262,7 @@ export default function Profile() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
+                  Endereço
                 </label>
                 <input
                   type="text"
@@ -275,7 +275,7 @@ export default function Profile() {
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City
+                    Cidade
                   </label>
                   <input
                     type="text"
@@ -286,7 +286,7 @@ export default function Profile() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State
+                    Estado
                   </label>
                   <input
                     type="text"
@@ -297,7 +297,7 @@ export default function Profile() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ZIP Code
+                    CEP
                   </label>
                   <input
                     type="text"
@@ -313,14 +313,14 @@ export default function Profile() {
                   type="submit"
                   className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200"
                 >
-                  Save Changes
+                  Salvar Alterações
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
                   className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-xl font-medium transition-all duration-200"
                 >
-                  Cancel
+                  Cancelar
                 </button>
               </div>
             </form>
@@ -351,15 +351,15 @@ export default function Profile() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Phone</p>
-                  <p className="text-gray-900">{profile.phone || 'Not provided'}</p>
+                  <p className="text-sm font-medium text-gray-500">Telefone</p>
+                  <p className="text-gray-900">{profile.phone || 'Não fornecido'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Address</p>
+                  <p className="text-sm font-medium text-gray-500">Endereço</p>
                   <p className="text-gray-900">
                     {profile.address 
                       ? `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''} ${profile.zip_code || ''}`
-                      : 'Not provided'
+                      : 'Não fornecido'
                     }
                   </p>
                 </div>
@@ -371,24 +371,24 @@ export default function Profile() {
         {/* Vehicles */}
         <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Your Vehicles</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Seus Veículos</h2>
             <button
               onClick={() => setShowVehicleForm(true)}
               className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-200"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Vehicle</span>
+              <span>Adicionar Veículo</span>
             </button>
           </div>
 
           {showVehicleForm && (
             <div className="mb-6 p-6 border border-gray-200 rounded-xl bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Vehicle</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Adicionar Novo Veículo</h3>
               <form onSubmit={handleVehicleSubmit} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Make *
+                      Marca *
                     </label>
                     <input
                       type="text"
@@ -401,7 +401,7 @@ export default function Profile() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Model *
+                      Modelo *
                     </label>
                     <input
                       type="text"
@@ -417,7 +417,7 @@ export default function Profile() {
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Year
+                      Ano
                     </label>
                     <input
                       type="number"
@@ -430,19 +430,19 @@ export default function Profile() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Color
+                      Cor
                     </label>
                     <input
                       type="text"
                       value={vehicleForm.color}
                       onChange={(e) => setVehicleForm({ ...vehicleForm, color: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Red, Blue, Silver..."
+                      placeholder="Vermelho, Azul, Prata..."
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      License Plate
+                      Placa
                     </label>
                     <input
                       type="text"
@@ -462,7 +462,7 @@ export default function Profile() {
                       onChange={(e) => setVehicleForm({ ...vehicleForm, is_default: e.target.checked })}
                       className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Set as default vehicle</span>
+                    <span className="ml-2 text-sm text-gray-700">Definir como veículo padrão</span>
                   </label>
                 </div>
 
@@ -471,14 +471,14 @@ export default function Profile() {
                     type="submit"
                     className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200"
                   >
-                    Add Vehicle
+                    Adicionar Veículo
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowVehicleForm(false)}
                     className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-xl font-medium transition-all duration-200"
                   >
-                    Cancel
+                    Cancelar
                   </button>
                 </div>
               </form>
@@ -488,8 +488,8 @@ export default function Profile() {
           {vehicles.length === 0 ? (
             <div className="text-center py-8">
               <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">No vehicles registered</p>
-              <p className="text-gray-500 text-sm">Add your first vehicle to start booking appointments</p>
+              <p className="text-gray-600 mb-4">Nenhum veículo registrado</p>
+              <p className="text-gray-500 text-sm">Adicione seu primeiro veículo para começar a agendar lavagens</p>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -514,13 +514,13 @@ export default function Profile() {
                     </div>
                     {vehicle.is_default && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                        Default
+                        Padrão
                       </span>
                     )}
                   </div>
                   {vehicle.license_plate && (
                     <p className="text-sm text-gray-600 mb-3">
-                      License: {vehicle.license_plate}
+                      Placa: {vehicle.license_plate}
                     </p>
                   )}
                 </div>

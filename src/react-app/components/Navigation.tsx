@@ -20,10 +20,10 @@ export default function Navigation() {
   };
 
   const navItems = [
-    { path: "/dashboard", icon: Calendar, label: "Dashboard" },
-    { path: "/booking", icon: Car, label: "Book Wash" },
-    { path: "/subscription", icon: CreditCard, label: "Subscription" },
-    { path: "/profile", icon: User, label: "Profile" },
+    { path: "/dashboard", icon: Calendar, label: "Painel" },
+    { path: "/booking", icon: Car, label: "Agendar Lavagem" },
+    { path: "/subscription", icon: CreditCard, label: "Assinatura" },
+    { path: "/profile", icon: User, label: "Perfil" },
   ];
 
   return (
@@ -101,7 +101,7 @@ export default function Navigation() {
                     className="w-full flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                   >
                     <User className="w-4 h-4" />
-                    <span>Profile</span>
+                    <span>Perfil</span>
                   </button>
                   <div className="border-t border-gray-100 my-1"></div>
                   <button
@@ -112,7 +112,7 @@ export default function Navigation() {
                     className="w-full flex items-center space-x-2 px-4 py-2 text-purple-600 hover:bg-purple-50 transition-colors"
                   >
                     <Car className="w-4 h-4" />
-                    <span>Admin Panel</span>
+                    <span>Painel Administrativo</span>
                   </button>
                   <div className="border-t border-gray-100 my-1"></div>
                   <button
@@ -123,7 +123,7 @@ export default function Navigation() {
                     className="w-full flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
+                    <span>Sair</span>
                   </button>
                 </div>
               )}

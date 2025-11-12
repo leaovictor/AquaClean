@@ -92,7 +92,7 @@ export default function AdminPlans() {
     const featuresArray = planForm.features.filter(f => f.trim() !== "");
     
     if (!planForm.name || !planForm.price || !planForm.washes_per_month || featuresArray.length === 0) {
-      setMessage({ type: 'error', text: 'Please fill in all required fields' });
+      setMessage({ type: 'error', text: 'Por favor, preencha todos os campos obrigatórios' });
       return;
     }
 
@@ -121,18 +121,18 @@ export default function AdminPlans() {
       if (response.ok) {
         setMessage({ 
           type: 'success', 
-          text: `Plan ${editingPlan ? 'updated' : 'created'} successfully!` 
+          text: `Plano ${editingPlan ? 'atualizado' : 'criado'} com sucesso!` 
         });
         setShowModal(false);
         resetForm();
         fetchPlans();
       } else {
         const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || `Failed to ${editingPlan ? 'update' : 'create'} plan` });
+        setMessage({ type: 'error', text: errorData.error || `Falha ao ${editingPlan ? 'atualizar' : 'criar'} plano` });
       }
     } catch (error) {
       console.error("Error saving plan:", error);
-      setMessage({ type: 'error', text: `Failed to ${editingPlan ? 'update' : 'create'} plan` });
+      setMessage({ type: 'error', text: `Falha ao ${editingPlan ? 'atualizar' : 'criar'} plano` });
     }
   };
 
@@ -155,7 +155,7 @@ export default function AdminPlans() {
   };
 
   const deletePlan = async (planId: number) => {
-    if (!confirm("Are you sure you want to delete this plan?")) {
+    if (!confirm("Tem certeza de que deseja excluir este plano?")) {
       return;
     }
 
@@ -165,14 +165,14 @@ export default function AdminPlans() {
       });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Plan deleted successfully!' });
+        setMessage({ type: 'success', text: 'Plano excluído com sucesso!' });
         fetchPlans();
       } else {
-        setMessage({ type: 'error', text: 'Failed to delete plan' });
+        setMessage({ type: 'error', text: 'Falha ao excluir plano' });
       }
     } catch (error) {
       console.error("Error deleting plan:", error);
-      setMessage({ type: 'error', text: 'Failed to delete plan' });
+      setMessage({ type: 'error', text: 'Falha ao excluir plano' });
     }
   };
 
@@ -208,8 +208,8 @@ export default function AdminPlans() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Subscription Plans</h1>
-            <p className="text-gray-600">Manage pricing plans and features for customers.</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Planos de Assinatura</h1>
+            <p className="text-gray-600">Gerencie planos de preços e recursos para clientes.</p>
           </div>
           <button
             onClick={() => {
@@ -219,7 +219,7 @@ export default function AdminPlans() {
             className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
           >
             <Plus className="w-5 h-5" />
-            <span>Add Plan</span>
+            <span>Adicionar Plano</span>
           </button>
         </div>
 
@@ -274,10 +274,10 @@ export default function AdminPlans() {
                 <div className="mb-6">
                   <div className="text-3xl font-bold text-gray-900 mb-2">
                     ${plan.price}
-                    <span className="text-lg text-gray-600">/month</span>
+                    <span className="text-lg text-gray-600">/mês</span>
                   </div>
                   <p className="text-blue-600 font-medium">
-                    {plan.washes_per_month} washes per month
+                    {plan.washes_per_month} lavagens por mês
                   </p>
                 </div>
 
@@ -296,7 +296,7 @@ export default function AdminPlans() {
                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-xl font-medium transition-colors flex items-center justify-center space-x-2"
                   >
                     <Edit2 className="w-4 h-4" />
-                    <span>Edit</span>
+                    <span>Editar</span>
                   </button>
                   <button
                     onClick={() => deletePlan(plan.id)}
@@ -308,7 +308,7 @@ export default function AdminPlans() {
 
                 {!plan.is_active && (
                   <div className="mt-3 text-center">
-                    <span className="text-red-600 text-sm font-medium">Inactive Plan</span>
+                    <span className="text-red-600 text-sm font-medium">Plano Inativo</span>
                   </div>
                 )}
               </div>
@@ -319,7 +319,7 @@ export default function AdminPlans() {
         {plans.length === 0 && (
           <div className="text-center py-12 bg-white rounded-2xl shadow-lg border border-gray-200">
             <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No subscription plans created yet</p>
+            <p className="text-gray-500 mb-4">Nenhum plano de assinatura criado ainda</p>
             <button
               onClick={() => {
                 resetForm();
@@ -327,7 +327,7 @@ export default function AdminPlans() {
               }}
               className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200"
             >
-              Create Your First Plan
+              Crie Seu Primeiro Plano
             </button>
           </div>
         )}
@@ -338,7 +338,7 @@ export default function AdminPlans() {
             <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-2xl bg-white">
               <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900">
-                  {editingPlan ? 'Edit Plan' : 'Create New Plan'}
+                  {editingPlan ? 'Editar Plano' : 'Criar Novo Plano'}
                 </h3>
               </div>
 
@@ -346,7 +346,7 @@ export default function AdminPlans() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Plan Name *
+                      Nome do Plano *
                     </label>
                     <input
                       type="text"
@@ -354,13 +354,13 @@ export default function AdminPlans() {
                       value={planForm.name}
                       onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., Basic Plan"
+                      placeholder="ex: Plano Básico"
                     />
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price (USD) *
+                      Preço (USD) *
                     </label>
                     <input
                       type="number"
@@ -376,37 +376,37 @@ export default function AdminPlans() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    Descrição
                   </label>
                   <textarea
                     value={planForm.description}
                     onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
                     rows={3}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Brief description of the plan"
+                    placeholder="Breve descrição do plano"
                   />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Duration (Months) *
+                      Duração (Meses) *
                     </label>
                     <select
                       value={planForm.duration_months}
                       onChange={(e) => setPlanForm({ ...planForm, duration_months: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="1">1 Month</option>
-                      <option value="3">3 Months</option>
-                      <option value="6">6 Months</option>
-                      <option value="12">12 Months</option>
+                      <option value="1">1 Mês</option>
+                      <option value="3">3 Meses</option>
+                      <option value="6">6 Meses</option>
+                      <option value="12">12 Meses</option>
                     </select>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Washes per Month *
+                      Lavagens por Mês *
                     </label>
                     <input
                       type="number"
@@ -421,7 +421,7 @@ export default function AdminPlans() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Features *
+                    Recursos *
                   </label>
                   <div className="space-y-3">
                     {planForm.features.map((feature, index) => (
@@ -431,7 +431,7 @@ export default function AdminPlans() {
                           value={feature}
                           onChange={(e) => updateFeature(index, e.target.value)}
                           className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="e.g., Priority booking"
+                          placeholder="ex: Agendamento prioritário"
                         />
                         {planForm.features.length > 1 && (
                           <button
@@ -450,7 +450,7 @@ export default function AdminPlans() {
                     onClick={addFeature}
                     className="mt-3 text-blue-600 hover:text-blue-800 font-medium text-sm"
                   >
-                    + Add Feature
+                    + Adicionar Recurso
                   </button>
                 </div>
 
@@ -462,7 +462,7 @@ export default function AdminPlans() {
                       onChange={(e) => setPlanForm({ ...planForm, is_active: e.target.checked })}
                       className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Active plan (visible to customers)</span>
+                    <span className="ml-2 text-sm text-gray-700">Plano ativo (visível para clientes)</span>
                   </label>
                 </div>
 
@@ -472,13 +472,13 @@ export default function AdminPlans() {
                     onClick={() => setShowModal(false)}
                     className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
                   >
-                    Cancel
+                    Cancelar
                   </button>
                   <button
                     type="submit"
                     className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl transition-all duration-200"
                   >
-                    {editingPlan ? 'Update Plan' : 'Create Plan'}
+                    {editingPlan ? 'Atualizar Plano' : 'Criar Plano'}
                   </button>
                 </div>
               </form>
