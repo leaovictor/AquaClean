@@ -93,7 +93,14 @@ export default function Booking() {
       }
 
       if (timeSlotsData) {
-        setTimeSlots(timeSlotsData);
+        const now = new Date();
+        const filteredTimeSlots = timeSlotsData.filter((slot: TimeSlot) => {
+          const [year, month, day] = slot.date.split('-').map(Number);
+          const [hours, minutes] = slot.time.split(':').map(Number);
+          const slotDateTime = new Date(year, month - 1, day, hours, minutes);
+          return slotDateTime > now;
+        });
+        setTimeSlots(filteredTimeSlots);
       }
 
       if (appointmentsData) {

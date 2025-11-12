@@ -19,7 +19,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { currentUser, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Or a spinner
+    return <div>Carregando...</div>; // Or a spinner
   }
 
   if (!currentUser) {
