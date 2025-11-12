@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
-import { Calendar, Car, Clock, Plus, ChevronRight, Trash2 } from "lucide-react";
+import { Calendar, Car, Clock, Plus, ChevronRight, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import type { Appointment, Vehicle, UserProfile } from "@/shared/types";
 import { useAuth } from "@/react-app/AuthContext";
 
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
   const [dataLoading, setDataLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!currentUser && !loading) {
@@ -62,6 +63,11 @@ export default function Dashboard() {
 
   const handleCancel = async (appointmentId: number) => {
     if (!session) return;
+
+    if (!window.confirm("Você tem certeza que deseja cancelar este agendamento?")) {
+      return;
+    }
+
     try {
       const token = session.access_token;
       const response = await fetch(`${functionsBaseUrl}/cancel-appointment`, {
@@ -74,13 +80,18 @@ export default function Dashboard() {
       });
 
       if (response.ok) {
+        setToastMessage({ type: 'success', text: 'Agendamento cancelado com sucesso!' });
         fetchDashboardData();
       } else {
         const errorData = await response.json();
+        setToastMessage({ type: 'error', text: errorData.error || 'Falha ao cancelar agendamento.' });
         console.error("Error canceling appointment:", errorData.error);
       }
     } catch (error) {
+      setToastMessage({ type: 'error', text: 'Erro ao cancelar agendamento: Problema de conexão.' });
       console.error("Error canceling appointment:", error);
+    } finally {
+      setTimeout(() => setToastMessage(null), 5000);
     }
   };
 
@@ -101,6 +112,20 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
       <Navigation />
       
+      {toastMessage && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-opacity duration-300 ${
+          toastMessage.type === 'success' ? 'bg-green-100 border border-green-200 text-green-800' :
+          'bg-red-100 border border-red-200 text-red-800'
+        }`}>
+          {toastMessage.type === 'success' ? (
+            <CheckCircle className="w-5 h-5 text-green-600" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          )}
+          <span>{toastMessage.text}</span>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
