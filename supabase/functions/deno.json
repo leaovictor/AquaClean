@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "lib": ["deno.ns", "dom", "dom.iterable", "esnext"],
-    "jsx": "react-jsx",
-    "jsxImportSource": "https://esm.sh/react@18.2.0"
-  },
-  "importMap": "./import_map.json"
-}
