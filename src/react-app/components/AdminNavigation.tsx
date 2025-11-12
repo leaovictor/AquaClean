@@ -33,9 +33,9 @@ export default function AdminNavigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div 
+          <Link
+            to="/admin/dashboard"
             className="flex items-center space-x-3 cursor-pointer"
-            onClick={() => navigate("/admin/dashboard")}
           >
             <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-2 rounded-xl">
               <Car className="w-6 h-6 text-white" />
@@ -46,7 +46,7 @@ export default function AdminNavigation() {
               </h1>
               <span className="text-xs text-gray-400">Painel Administrativo</span>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">

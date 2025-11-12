@@ -31,9 +31,9 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div 
+          <Link
+            to="/dashboard"
             className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => navigate("/dashboard")}
           >
             <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-2 rounded-xl">
               <Car className="w-6 h-6 text-white" />
@@ -41,7 +41,7 @@ export default function Navigation() {
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
               AquaClean Pro
             </h1>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
