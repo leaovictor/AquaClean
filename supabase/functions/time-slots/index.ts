@@ -1,135 +1,97 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
-// --- Interface para as regras de disponibilidade do banco de dados ---
-interface AvailabilityRule {
+const SLOT_DURATION_MINUTES = 60;
+const DAYS_TO_GENERATE = 7;
+
+interface TimeSlotRule {
   id: number;
-  day_of_week: number; // 0 = Sunday, 6 = Saturday
-  start_time: string; // "HH:mm"
-  end_time: string; // "HH:mm"
-  is_available: boolean;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
 }
 
-// --- Função para gerar slots baseada em regras dinâmicas (Versão Remota) ---
-function generateTimeSlots(rules: AvailabilityRule[], daysToGenerate: number): { id: number; date: string; time: string }[] {
-  console.log('Generating time slots with rules:', rules);
-  const generatedSlots: { id: number; date: string; time: string }[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  for (let i = 0; i < daysToGenerate; i++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + i);
-    const dayOfWeek = date.getDay();
-    const dateString = date.toISOString().split('T')[0];
-
-    const rulesForDay = rules.filter(rule => rule.day_of_week === dayOfWeek && rule.is_available);
-
-    for (const rule of rulesForDay) {
-      try {
-        const startHour = parseInt(rule.start_time.split(':')[0]);
-        const endHour = parseInt(rule.end_time.split(':')[0]);
-
-        if (isNaN(startHour) || isNaN(endHour)) {
-          console.error('Invalid time format for rule:', rule);
-          continue;
-        }
-
-        for (let hour = startHour; hour < endHour; hour++) {
-          const time = `${hour.toString().padStart(2, '0')}:00`;
-          
-          // Gerando um pseudo ID
-          const pseudoId = date.getTime() + hour; 
-
-          generatedSlots.push({
-            id: pseudoId,
-            date: dateString,
-            time: time,
-          });
-        }
-      } catch (e) {
-        console.error('Error processing rule:', rule, e);
-      }
-    }
-  }
-  console.log('Generated slots:', generatedSlots.length);
-  return generatedSlots;
-}
-
-// --- Função principal de serviço ---
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('time-slots function invoked');
-    
-    // Configuração do Cliente Supabase com Auth
-    const supabase = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-    
-    // 1. Verificação de Autenticação
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.error('Unauthorized access attempt');
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      })
-    }
-
-    // 2. Busca de Regras de Disponibilidade (time_slots)
-    console.log('Fetching availability rules for user:', user.id);
-    const { data: availabilityRules, error: rulesError } = await supabase
+    // 1. Fetch all active time slot rules
+    const { data: rules, error: rulesError } = await supabaseAdmin
       .from('time_slots')
-      .select('id, day_of_week, start_time, end_time, is_available');
+      .select('id, day_of_week, start_time, end_time')
+      .eq('is_active', true);
 
-    if (rulesError) {
-      console.error('Supabase error fetching availability rules:', rulesError);
-      throw new Error(`Failed to fetch availability rules: ${rulesError.message}`);
-    }
-    
-    // 3. Geração de Slots
-    const generatedTimeSlots = generateTimeSlots(availabilityRules || [], 7); // Gera slots para os próximos 7 dias
+    if (rulesError) throw rulesError;
 
-    // 4. Busca de Agendamentos (appointments)
-    const { data: appointments, error: appointmentsError } = await supabase
+    // 2. Fetch all scheduled appointments for the next `DAYS_TO_GENERATE` days
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const startDate = today.toISOString();
+
+    const futureDate = new Date(today);
+    futureDate.setUTCDate(today.getUTCDate() + DAYS_TO_GENERATE);
+    const endDate = futureDate.toISOString();
+
+    const { data: appointments, error: appointmentsError } = await supabaseAdmin
       .from('appointments')
-      .select('time_slot_id'); // Assume que 'time_slot_id' é um campo que contém o ID do slot reservado
+      .select('appointment_time')
+      .gte('appointment_time', startDate)
+      .lt('appointment_time', endDate)
+      .in('status', ['scheduled', 'confirmed']);
 
-    if (appointmentsError) {
-      console.error('Supabase error fetching appointments:', appointmentsError);
-      throw new Error(`Failed to fetch appointments: ${appointmentsError.message}`);
+    if (appointmentsError) throw appointmentsError;
+
+    const bookedTimes = new Set(
+      appointments.map((a) => new Date(a.appointment_time).toISOString())
+    );
+
+    // 3. Generate all possible slots and filter out booked ones
+    const availableSlots: { id: number; date: string; time: string }[] = [];
+
+    for (let i = 0; i < DAYS_TO_GENERATE; i++) {
+      const currentDate = new Date(today);
+      currentDate.setUTCDate(today.getUTCDate() + i);
+      const dayOfWeek = currentDate.getUTCDay();
+      const dateString = currentDate.toISOString().split('T')[0];
+
+      const rulesForDay = rules.filter((r: TimeSlotRule) => r.day_of_week === dayOfWeek);
+
+      for (const rule of rulesForDay) {
+        const startTime = new Date(`${dateString}T${rule.start_time}`);
+        const endTime = new Date(`${dateString}T${rule.end_time}`);
+        let currentSlotTime = new Date(startTime);
+
+        while (currentSlotTime < endTime) {
+          const slotISO = currentSlotTime.toISOString();
+          if (!bookedTimes.has(slotISO)) {
+            availableSlots.push({
+              id: rule.id, // Use the rule ID
+              date: dateString,
+              time: currentSlotTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            });
+          }
+          currentSlotTime = new Date(currentSlotTime.getTime() + SLOT_DURATION_MINUTES * 60000);
+        }
+      }
     }
 
-    const bookedSlotIds = appointments.map(a => a.time_slot_id);
-    const now = new Date();
-
-    // 5. Filtragem de Slots Disponíveis
-    const availableTimeSlots = generatedTimeSlots.filter(slot => {
-      const slotTime = new Date(`${slot.date}T${slot.time}:00`);
-      const isBooked = bookedSlotIds.includes(slot.id); 
-      const isPast = slotTime < now;
-
-      // Retorna apenas slots que estão no futuro E não estão reservados.
-      return !isPast && !isBooked;
-    });
-
-    return new Response(JSON.stringify(availableTimeSlots), {
+    return new Response(JSON.stringify(availableSlots), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    })
+    });
+
   } catch (error) {
-    console.error('Caught error in time-slots function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+      status: 500,
+    });
   }
-})
+});
