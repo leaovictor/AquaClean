@@ -111,13 +111,15 @@ export default function Booking() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedVehicle || !selectedTimeSlot) {
-      setMessage({ type: 'error', text: 'Selecione um veículo e um horário.' });
-      return;
-    }
     // Checagem de robustez
     if (!session || !session.access_token) { 
       handleAuthError('Sua sessão expirou. Faça login para agendar.');
+      return;
+    }
+    const token = session.access_token;
+
+    if (!selectedVehicle || !selectedTimeSlot) {
+      setMessage({ type: 'error', text: 'Selecione um veículo e um horário.' });
       return;
     }
 
@@ -125,10 +127,6 @@ export default function Booking() {
     setMessage(null);
 
     try {
-      const token = session.access_token;
-      // Prepara os dados de tempo para a Edge Function
-      const appointmentDateTime = new Date(`${selectedTimeSlot.date}T${selectedTimeSlot.time}`).toISOString();
-
       const response = await fetch(`${functionsBaseUrl}/appointments`, {
         method: "POST",
         headers: {
@@ -137,7 +135,9 @@ export default function Booking() {
         },
         body: JSON.stringify({
           vehicle_id: selectedVehicle,
-          appointment_time: appointmentDateTime,
+          time_slot_id: selectedTimeSlot.id,
+          appointment_date: selectedTimeSlot.date,
+          appointment_time: selectedTimeSlot.time,
           service_type: selectedService,
           special_instructions: specialInstructions || undefined,
         }),
