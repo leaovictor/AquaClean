@@ -62,7 +62,7 @@ const SignUp: React.FC = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
           {!successMessage ? (
             <>
-              <div className="rounded-md shadow-sm -space-y-px">
+              <div className="space-y-4">
                 <div>
                   <label htmlFor="email-address" className="sr-only">
                     Endereço de e-mail
