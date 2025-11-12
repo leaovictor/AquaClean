@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, Settings, Bell, Clock } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext";
