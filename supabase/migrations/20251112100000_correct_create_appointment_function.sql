@@ -1,3 +1,7 @@
+-- This file contains the correct and consolidated definition of the
+-- create_appointment_with_check function. Please copy the content of this
+-- file and run it in the Supabase SQL editor for your project.
+
 -- 1. Drop the existing function to be replaced
 DROP FUNCTION IF EXISTS public.create_appointment_with_check;
 

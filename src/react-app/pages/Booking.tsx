@@ -380,7 +380,7 @@ export default function Booking() {
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                       {slots.map((slot) => (
                         <button
-                          key={slot.id}
+                          key={`${slot.id}-${slot.time}`}
                           type="button"
                           onClick={() => setSelectedTimeSlot(slot)}
                           className={`p-3 border rounded-xl text-center transition-all duration-200 ${

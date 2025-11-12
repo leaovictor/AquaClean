@@ -80,7 +80,7 @@ serve(async (req) => {
           const slotISO = currentSlotTime.toISOString();
           if (!bookedTimes.has(slotISO)) {
             availableSlots.push({
-              id: currentSlotTime.getTime(), // Use timestamp as a unique ID
+              id: rule.id, // Use the ID from the time_slots table rule
               date: dateString,
               time: currentSlotTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
             });

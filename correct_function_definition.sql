@@ -1,3 +1,7 @@
+-- This file contains the correct and consolidated definition of the
+-- create_appointment_with_check function. Please copy the content of this
+-- file and run it in the Supabase SQL editor for your project.
+
 -- 1. Drop the existing function to be replaced
 DROP FUNCTION IF EXISTS public.create_appointment_with_check;
 
@@ -16,11 +20,11 @@ DECLARE
     v_existing_count integer;
     v_new_appointment json;
 BEGIN
-    -- Check for existing appointments for the given time slot
+    -- Check for existing appointments for the given start time
     SELECT count(*)
     INTO v_existing_count
     FROM public.appointments
-    WHERE time_slot_id = p_time_slot_id AND status IN ('scheduled', 'confirmed');
+    WHERE start_time = p_start_time AND status IN ('scheduled', 'confirmed');
 
     -- If an appointment exists, return an error
     IF v_existing_count > 0 THEN
