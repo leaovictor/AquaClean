@@ -73,7 +73,7 @@ export default function Dashboard() {
         return { ...apt, vehicle, timeSlot };
       });
 
-      setAppointments(enrichedAppointments.slice(0, 5));
+      setAppointments(enrichedAppointments);
       setVehicles(vehiclesData);
       setProfile(userData);
     } catch (error) {
@@ -390,8 +390,16 @@ export default function Dashboard() {
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">Data e Hora</p>
                   <p className="text-gray-700 text-sm">
-                    {appointmentToCancel.timeSlot?.date && formatDate(appointmentToCancel.timeSlot.date)}{' '}
-                    às {appointmentToCancel.timeSlot?.time && formatTime(appointmentToCancel.timeSlot.time)}
+                    {new Date(appointmentToCancel.start_time).toLocaleDateString('pt-BR', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}{' '}
+                    às {new Date(appointmentToCancel.start_time).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </p>
                 </div>
               </div>

@@ -82,7 +82,7 @@ serve(async (req) => {
       }
 
       // 2. Calcular o horário de término e chamar a função RPC
-      const startTime = new Date(`${appointment_date}T${appointment_time}:00Z`);
+      const startTime = new Date(`${appointment_date}T${appointment_time}:00`);
       let durationInMinutes = 0;
 
       switch (service_type) {

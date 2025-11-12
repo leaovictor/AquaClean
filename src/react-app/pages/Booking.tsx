@@ -163,6 +163,10 @@ export default function Booking() {
     setSubmitting(true);
     setMessage(null);
 
+    console.log('Selected Time Slot:', selectedTimeSlot);
+    console.log('Selected Time Slot Date:', selectedTimeSlot?.date);
+    console.log('Selected Time Slot Time:', selectedTimeSlot?.time);
+
     // Encontra o tipo de serviço selecionado para extrair o nome/ID
     const serviceDetails = serviceTypes.find(s => s.id === selectedService);
     
