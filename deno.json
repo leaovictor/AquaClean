@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "deno.ns",
+      "deno.unstable"
+    ]
+  },
+  "lint": {
+    "files": {
+      "include": [
+        "supabase/functions/"
+      ]
+    }
+  },
+  "imports": {
+    "std/": "https://deno.land/std@0.168.0/",
+    "@supabase/": "https://esm.sh/@supabase/"
+  }
+}

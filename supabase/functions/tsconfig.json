@@ -2,8 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",
-    "lib": ["esnext", "dom"],
+    "lib": ["deno.ns", "dom", "dom.iterable", "esnext"],
     "jsx": "react-jsx",
     "jsxImportSource": "https://esm.sh/react@18.2.0",
     "allowJs": true,
@@ -16,7 +15,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["https://deno.land/x/supabase/ts/functions.ts"]
+    "allowImportingTsExtensions": true
   },
   "include": ["**/*.ts"]
 }

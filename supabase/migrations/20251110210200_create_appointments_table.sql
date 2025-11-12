@@ -2,7 +2,7 @@ CREATE TABLE appointments (
     id SERIAL PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     vehicle_id INTEGER REFERENCES vehicles(id) ON DELETE CASCADE,
-    time_slot_id INTEGER REFERENCES time_slots(id) ON DELETE CASCADE,
+    appointment_time TIMESTAMP WITH TIME ZONE NOT NULL,
     service_type TEXT NOT NULL DEFAULT 'basic',
     status TEXT NOT NULL DEFAULT 'scheduled',
     special_instructions TEXT,
