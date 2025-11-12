@@ -20,7 +20,7 @@ serve(async (req) => {
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.g('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     // 1. Fetch all active time slot rules
@@ -73,7 +73,7 @@ serve(async (req) => {
           const slotISO = currentSlotTime.toISOString();
           if (!bookedTimes.has(slotISO)) {
             availableSlots.push({
-              id: rule.id, // Use the rule ID
+              id: currentSlotTime.getTime(), // Use timestamp as a unique ID
               date: dateString,
               time: currentSlotTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
             });

@@ -127,21 +127,17 @@ export default function Booking() {
     try {
       const token = session.access_token;
       // Prepara os dados de tempo para a Edge Function
-      const appointmentDate = selectedTimeSlot.date;
-      const appointmentTime = selectedTimeSlot.time;
+      const appointmentDateTime = new Date(`${selectedTimeSlot.date}T${selectedTimeSlot.time}`).toISOString();
 
       const response = await fetch(`${functionsBaseUrl}/appointments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Garante que o token JWT está sendo enviado
-          'Authorization': 'Bearer ' + token, 
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           vehicle_id: selectedVehicle,
-          time_slot_id: selectedTimeSlot.id,
-          appointment_date: appointmentDate, // Passa a data separada
-          appointment_time: appointmentTime, // Passa a hora separada
+          appointment_time: appointmentDateTime,
           service_type: selectedService,
           special_instructions: specialInstructions || undefined,
         }),
