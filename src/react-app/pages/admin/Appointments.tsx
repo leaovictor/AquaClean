@@ -174,8 +174,8 @@ export default function AdminAppointments() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Appointments</h1>
-          <p className="text-gray-600">Manage all car wash appointments and bookings.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Agendamentos</h1>
+          <p className="text-gray-600">Gerencie todos os agendamentos e reservas de lavagem de carros.</p>
         </div>
 
         {/* Filters */}
@@ -187,7 +187,7 @@ export default function AdminAppointments() {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search customers, vehicles..."
+                  placeholder="Buscar clientes, veículos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -202,11 +202,11 @@ export default function AdminAppointments() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="canceled">Canceled</option>
+                <option value="all">Todos os Status</option>
+                <option value="scheduled">Agendado</option>
+                <option value="in_progress">Em Progresso</option>
+                <option value="completed">Concluído</option>
+                <option value="canceled">Cancelado</option>
               </select>
             </div>
 
@@ -217,10 +217,10 @@ export default function AdminAppointments() {
                 onChange={(e) => setDateFilter(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Dates</option>
-                <option value="today">Today</option>
-                <option value="tomorrow">Tomorrow</option>
-                <option value="week">This Week</option>
+                <option value="all">Todas as Datas</option>
+                <option value="today">Hoje</option>
+                <option value="tomorrow">Amanhã</option>
+                <option value="week">Esta Semana</option>
               </select>
             </div>
           </div>
@@ -233,22 +233,22 @@ export default function AdminAppointments() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
+                    Cliente
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vehicle
+                    Veículo
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service
+                    Serviço
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date & Time
+                    Data e Hora
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Ações
                   </th>
                 </tr>
               </thead>
@@ -258,7 +258,7 @@ export default function AdminAppointments() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {appointment.customer_name || 'N/A'}
+                          {appointment.customer_name || 'N/D'}
                         </div>
                         <div className="text-sm text-gray-500">{appointment.user_email}</div>
                       </div>
