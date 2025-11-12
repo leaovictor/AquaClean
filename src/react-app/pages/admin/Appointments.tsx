@@ -295,7 +295,13 @@ export default function AdminAppointments() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
                         {getStatusIcon(appointment.status)}
-                        <span className="capitalize">{appointment.status}</span>
+                        <span className="capitalize">
+                          {appointment.status === 'scheduled' ? 'Agendado' :
+                           appointment.status === 'in_progress' ? 'Em Progresso' :
+                           appointment.status === 'completed' ? 'Concluído' :
+                           appointment.status === 'canceled' ? 'Cancelado' :
+                           appointment.status}
+                        </span>
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -329,7 +335,7 @@ export default function AdminAppointments() {
           {filteredAppointments.length === 0 && (
             <div className="text-center py-12">
               <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No appointments found</p>
+              <p className="text-gray-500">Nenhum agendamento encontrado</p>
             </div>
           )}
         </div>
@@ -340,57 +346,61 @@ export default function AdminAppointments() {
             <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-2xl bg-white">
               <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Appointment Details
+                  Detalhes do Agendamento
                 </h3>
                 <p className="text-gray-600">ID: {selectedAppointment.id}</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Customer Information</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Informações do Cliente</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {selectedAppointment.customer_name || 'N/A'}</p>
+                    <p><span className="font-medium">Nome:</span> {selectedAppointment.customer_name || 'N/D'}</p>
                     <p><span className="font-medium">Email:</span> {selectedAppointment.user_email}</p>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Vehicle Information</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Informações do Veículo</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Vehicle:</span> {selectedAppointment.year} {selectedAppointment.make} {selectedAppointment.model}</p>
-                    <p><span className="font-medium">Service:</span> {selectedAppointment.service_type}</p>
+                    <p><span className="font-medium">Veículo:</span> {selectedAppointment.year} {selectedAppointment.make} {selectedAppointment.model}</p>
+                    <p><span className="font-medium">Serviço:</span> {selectedAppointment.service_type}</p>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Appointment Details</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Detalhes do Agendamento</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Date:</span> {new Date(selectedAppointment.date).toLocaleDateString()}</p>
-                    <p><span className="font-medium">Time:</span> {selectedAppointment.time}</p>
+                    <p><span className="font-medium">Data:</span> {new Date(selectedAppointment.date).toLocaleDateString()}</p>
+                    <p><span className="font-medium">Hora:</span> {selectedAppointment.time}</p>
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">Status:</span>
                       <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedAppointment.status)}`}>
                         {getStatusIcon(selectedAppointment.status)}
-                        <span className="capitalize">{selectedAppointment.status}</span>
+                        <span className="capitalize">{selectedAppointment.status === 'scheduled' ? 'Agendado' :
+                                                      selectedAppointment.status === 'in_progress' ? 'Em Progresso' :
+                                                      selectedAppointment.status === 'completed' ? 'Concluído' :
+                                                      selectedAppointment.status === 'canceled' ? 'Cancelado' :
+                                                      selectedAppointment.status}</span>
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Additional Info</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Informações Adicionais</h4>
                   <div className="space-y-2">
                     {selectedAppointment.total_price && (
-                      <p><span className="font-medium">Price:</span> ${selectedAppointment.total_price}</p>
+                      <p><span className="font-medium">Preço:</span> ${selectedAppointment.total_price}</p>
                     )}
-                    <p><span className="font-medium">Booked:</span> {new Date(selectedAppointment.created_at).toLocaleDateString()}</p>
+                    <p><span className="font-medium">Agendado em:</span> {new Date(selectedAppointment.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>
               </div>
 
               {selectedAppointment.special_instructions && (
                 <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Special Instructions</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Instruções Especiais</h4>
                   <p className="text-gray-700 bg-gray-50 p-4 rounded-xl">
                     {selectedAppointment.special_instructions}
                   </p>
@@ -399,7 +409,7 @@ export default function AdminAppointments() {
 
               {/* Status Update */}
               <div className="mb-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-3">Update Status</h4>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Atualizar Status</h4>
                 <div className="flex flex-wrap gap-2">
                   {['scheduled', 'in_progress', 'completed', 'canceled'].map((status) => (
                     <button
@@ -411,7 +421,11 @@ export default function AdminAppointments() {
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                       }`}
                     >
-                      {status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {status === 'scheduled' ? 'Agendado' :
+                       status === 'in_progress' ? 'Em Progresso' :
+                       status === 'completed' ? 'Concluído' :
+                       status === 'canceled' ? 'Cancelado' :
+                       status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </button>
                   ))}
                 </div>
@@ -422,7 +436,7 @@ export default function AdminAppointments() {
                   onClick={() => setShowModal(false)}
                   className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
                 >
-                  Close
+                  Fechar
                 </button>
               </div>
             </div>
