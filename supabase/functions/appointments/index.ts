@@ -40,7 +40,7 @@ serve(async (req) => {
         .from('appointments')
         .select('*, vehicles(make, model, year, color)')
         .eq('user_id', user.id)
-        .order('appointment_time', { ascending: true });
+        .order('start_time', { ascending: true });
 
       if (error) throw error;
 
@@ -51,16 +51,23 @@ serve(async (req) => {
     }
 
     if (req.method === 'POST') {
-      const { vehicle_id, appointment_time, service_type, special_instructions } = await req.json();
+      // Recebe todos os campos
+      const body = await req.json();
+      const { vehicle_id, time_slot_id, appointment_date, appointment_time, service_type, special_instructions } = body;
 
-      if (!vehicle_id || !appointment_time || !service_type) {
-        return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+      // PARSING ROBUSTO: time_slot_id é um número (bigint).
+      const slotId = Number(time_slot_id);
+
+      // Verifica campos obrigatórios de forma mais explícita:
+      if (!vehicle_id || typeof slotId !== 'number' || isNaN(slotId) || !appointment_date || !appointment_time || !service_type) {
+        console.error('Missing fields in payload:', { vehicle_id, slotId, appointment_date, appointment_time, service_type });
+        return new Response(JSON.stringify({ error: 'Missing required fields or invalid ID format.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
         });
       }
-
-      // Verify vehicle ownership
+      
+      // 1. Verificar propriedade do veículo (essencial)
       const { count: vehicleCount, error: vehicleError } = await supabaseAdmin
         .from('vehicles')
         .select('*', { count: 'exact', head: true })
@@ -74,13 +81,18 @@ serve(async (req) => {
         });
       }
 
-      // Insert the new appointment directly
+      // 2. Inserir o agendamento diretamente
       const { data, error } = await supabaseAdmin
         .from('appointments')
         .insert({
           user_id: user.id,
           vehicle_id,
-          appointment_time,
+          time_slot_id: slotId, // Usando o número parseado
+          appointment_date, // DATE (ex: 2025-11-12)
+          appointment_time, // TIME (ex: 19:00:00)
+          // Combina data e hora para criar os timestamps completos (TIMESTAMPTZ)
+          start_time: `${appointment_date}T${appointment_time}:00Z`, 
+          end_time: `${appointment_date}T${appointment_time}:00Z`, 
           service_type,
           special_instructions: special_instructions ?? null,
           status: 'scheduled',
@@ -89,12 +101,14 @@ serve(async (req) => {
         .single();
 
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation
+        if (error.code === '23505') { // Unique constraint violation (concorrência ou chave duplicada)
           return new Response(JSON.stringify({ error: 'This time slot is no longer available.' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 409, // Conflict
           });
         }
+        // Se a FK falhar novamente (time_slot_id), o erro será capturado aqui
+        console.error('Database Insertion Error:', error);
         throw error;
       }
 
@@ -109,6 +123,7 @@ serve(async (req) => {
       status: 405,
     });
   } catch (error) {
+    console.error('Final Internal Error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

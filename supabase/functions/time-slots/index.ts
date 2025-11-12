@@ -20,14 +20,14 @@ serve(async (req) => {
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.g('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     // 1. Fetch all active time slot rules
     const { data: rules, error: rulesError } = await supabaseAdmin
       .from('time_slots')
       .select('id, day_of_week, start_time, end_time')
-      .eq('is_active', true);
+      .eq('is_available', true);
 
     if (rulesError) throw rulesError;
 
@@ -40,17 +40,24 @@ serve(async (req) => {
     futureDate.setUTCDate(today.getUTCDate() + DAYS_TO_GENERATE);
     const endDate = futureDate.toISOString();
 
+    console.log('Fetching appointments from:', startDate, 'to:', endDate);
+
     const { data: appointments, error: appointmentsError } = await supabaseAdmin
       .from('appointments')
-      .select('appointment_time')
-      .gte('appointment_time', startDate)
-      .lt('appointment_time', endDate)
+      .select('start_time')
+      .gte('start_time', startDate)
+      .lt('start_time', endDate)
       .in('status', ['scheduled', 'confirmed']);
 
-    if (appointmentsError) throw appointmentsError;
+    if (appointmentsError) {
+      console.error('Error fetching appointments:', appointmentsError);
+      throw appointmentsError;
+    }
+
+    console.log('Fetched appointments:', appointments);
 
     const bookedTimes = new Set(
-      appointments.map((a) => new Date(a.appointment_time).toISOString())
+      appointments.map((a) => new Date(a.start_time).toISOString())
     );
 
     // 3. Generate all possible slots and filter out booked ones
