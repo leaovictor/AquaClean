@@ -21,6 +21,7 @@ export default function Booking() {
   const [dataLoading, setDataLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false); // New state for confirmation popup
 
   useEffect(() => {
     // Redireciona se não houver usuário logado após o carregamento
@@ -115,20 +116,30 @@ export default function Booking() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleInitiateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Checagem de robustez
     if (!session || !session.access_token) { 
       handleAuthError('Sua sessão expirou. Faça login para agendar.');
       return;
     }
-    const token = session.access_token;
 
     if (!selectedVehicle || !selectedTimeSlot) {
       setMessage({ type: 'error', text: 'Selecione um veículo e um horário.' });
       return;
     }
+
+    setShowConfirmation(true); // Open confirmation popup
+  };
+
+  const handleConfirmBooking = async () => {
+    // Checagem de robustez
+    if (!session || !session.access_token) { 
+      handleAuthError('Sua sessão expirou. Faça login para agendar.');
+      setShowConfirmation(false); // Close popup if session invalid
+      return;
+    }
+    const token = session.access_token;
 
     setSubmitting(true);
     setMessage(null);
@@ -142,9 +153,9 @@ export default function Booking() {
         },
         body: JSON.stringify({
           vehicle_id: selectedVehicle,
-          time_slot_id: selectedTimeSlot.id,
-          appointment_date: selectedTimeSlot.date,
-          appointment_time: selectedTimeSlot.time,
+          time_slot_id: selectedTimeSlot?.id, // Use optional chaining as it might be null
+          appointment_date: selectedTimeSlot?.date,
+          appointment_time: selectedTimeSlot?.time,
           service_type: selectedService,
           special_instructions: specialInstructions || undefined,
         }),
@@ -157,7 +168,6 @@ export default function Booking() {
         }, 2000);
       } else {
         const errorData = await response.json();
-        // Trata 401 explicitamente
         if (response.status === 401) {
              handleAuthError(errorData.error || 'Autenticação falhou. Faça login novamente.');
              return;
@@ -169,6 +179,8 @@ export default function Booking() {
       setMessage({ type: 'error', text: 'Falha ao agendar: erro de conexão.' });
     } finally {
       setSubmitting(false);
+      setShowConfirmation(false); // Close confirmation popup
+      setTimeout(() => setMessage(null), 5000); // Clear message after 5 seconds
     }
   };
 
@@ -273,30 +285,27 @@ export default function Booking() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
       <Navigation />
       
+      {message && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-opacity duration-300 ${
+          message.type === 'success' ? 'bg-green-100 border border-green-200 text-green-800' :
+          'bg-red-100 border border-red-200 text-red-800'
+        }`}>
+          {message.type === 'success' ? (
+            <CheckCircle className="w-5 h-5 text-green-600" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          )}
+          <span>{message.text}</span>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Agendar uma Lavagem</h1>
           <p className="text-gray-600">Selecione seu veículo, serviço e horário preferido.</p>
         </div>
 
-        {message && (
-          <div className={`mb-6 p-4 rounded-xl flex items-center space-x-2 ${
-            message.type === 'success' 
-              ? 'bg-green-50 border border-green-200' 
-              : 'bg-red-50 border border-red-200'
-          }`}>
-            {message.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-red-600" />
-            )}
-            <span className={message.type === 'success' ? 'text-green-800' : 'text-red-800'}>
-              {message.text}
-            </span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleInitiateBooking} className="space-y-8">
           {/* Vehicle Selection */}
           <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Selecione o Veículo</h2>
@@ -433,6 +442,66 @@ export default function Booking() {
           </div>
         </form>
       </div>
+
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Confirmar Agendamento</h2>
+            <p className="text-gray-700 mb-6 text-center">Por favor, revise os detalhes do seu agendamento:</p>
+            
+            <div className="space-y-4 mb-8">
+              <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-xl">
+                <Car className="w-6 h-6 text-blue-600" />
+                <div>
+                  <p className="font-medium text-gray-900">Veículo:</p>
+                  <p className="text-gray-700">
+                    {vehicles.find(v => v.id === selectedVehicle)?.year}{' '}
+                    {vehicles.find(v => v.id === selectedVehicle)?.make}{' '}
+                    {vehicles.find(v => v.id === selectedVehicle)?.model}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-blue-600" />
+                <div>
+                  <p className="font-medium text-gray-900">Serviço:</p>
+                  <p className="text-gray-700">
+                    {serviceTypes.find(s => s.id === selectedService)?.name}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-xl">
+                <Calendar className="w-6 h-6 text-blue-600" />
+                <div>
+                  <p className="font-medium text-gray-900">Data e Hora:</p>
+                  <p className="text-gray-700">
+                    {selectedTimeSlot?.date && new Date(selectedTimeSlot.date + 'T00:00:00').toLocaleDateString('pt-BR', {
+                      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    })}{' '}
+                    às {selectedTimeSlot?.time}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="px-6 py-3 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Voltar
+              </button>
+              <button
+                onClick={handleConfirmBooking}
+                disabled={submitting}
+                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? "Confirmando..." : "Confirmar Agendamento"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
-}
