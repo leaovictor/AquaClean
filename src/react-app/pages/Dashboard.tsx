@@ -189,7 +189,9 @@ export default function Dashboard() {
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                           {appointment.service_type}
                         </span>
-                        <Trash2 className="w-4 h-4" />
+                        <button onClick={() => handleCancel(appointment.id)} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                     <p className="text-gray-600 text-sm">
