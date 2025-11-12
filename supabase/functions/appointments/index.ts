@@ -81,37 +81,57 @@ serve(async (req) => {
         });
       }
 
-      // 2. Inserir o agendamento diretamente
-      const { data, error } = await supabaseAdmin
-        .from('appointments')
-        .insert({
-          user_id: user.id,
-          vehicle_id,
-          time_slot_id: slotId, // Usando o número parseado
-          appointment_date, // DATE (ex: 2025-11-12)
-          appointment_time, // TIME (ex: 19:00:00)
-          // Combina data e hora para criar os timestamps completos (TIMESTAMPTZ)
-          start_time: `${appointment_date}T${appointment_time}:00Z`, 
-          end_time: `${appointment_date}T${appointment_time}:00Z`, 
-          service_type,
-          special_instructions: special_instructions ?? null,
-          status: 'scheduled',
-        })
-        .select()
-        .single();
+      // 2. Calcular o horário de término e chamar a função RPC
+      const startTime = new Date(`${appointment_date}T${appointment_time}:00Z`);
+      let durationInMinutes = 0;
+
+      switch (service_type) {
+        case 'basic':
+          durationInMinutes = 20;
+          break;
+        case 'premium':
+          durationInMinutes = 35;
+          break;
+        case 'deluxe':
+          durationInMinutes = 60;
+          break;
+        default:
+          return new Response(JSON.stringify({ error: `Invalid service type: ${service_type}` }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          });
+      }
+
+      const endTime = new Date(startTime.getTime() + durationInMinutes * 60000);
+
+      const { data, error } = await supabaseAdmin.rpc(
+        'create_appointment_with_check',
+        {
+          p_user_id: user.id,
+          p_vehicle_id: vehicle_id,
+          p_time_slot_id: slotId,
+          p_service_type: service_type,
+          p_special_instructions: special_instructions ?? null,
+          p_start_time: startTime.toISOString(),
+          p_end_time: endTime.toISOString(),
+        }
+      );
 
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation (concorrência ou chave duplicada)
-          return new Response(JSON.stringify({ error: 'This time slot is no longer available.' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 409, // Conflict
-          });
-        }
-        // Se a FK falhar novamente (time_slot_id), o erro será capturado aqui
-        console.error('Database Insertion Error:', error);
+        // Lida com erros a nível de RPC (ex: função não encontrada, problema de rede)
+        console.error('RPC Error:', error);
         throw error;
       }
 
+      // A função retorna um JSON. Verificamos se há um erro de aplicação dentro do JSON.
+      if (data && data.error) {
+        return new Response(JSON.stringify({ error: data.error }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409, // Conflict, já que o erro da função é "slot não disponível"
+        });
+      }
+
+      // Se bem-sucedido, 'data' contém o novo objeto de agendamento
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 201,
