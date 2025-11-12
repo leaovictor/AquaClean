@@ -26,8 +26,7 @@ serve(async (req) => {
     // 1. Fetch all active time slot rules
     const { data: rules, error: rulesError } = await supabaseAdmin
       .from('time_slots')
-      .select('id, day_of_week, start_time, end_time')
-      .eq('is_available', true);
+      .select('id, day_of_week, start_time, end_time');
 
     if (rulesError) throw rulesError;
 

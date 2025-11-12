@@ -66,13 +66,8 @@ serve(async (req) => {
 
     if (updateAppointmentError) throw updateAppointmentError;
 
-    // Update the corresponding time slot to be available again
-    const { error: updateTimeSlotError } = await supabaseClient
-      .from('time_slots')
-      .update({ is_available: true })
-      .eq('id', appointment.time_slot_id);
-
-    if (updateTimeSlotError) throw updateTimeSlotError;
+    // The availability of a time slot is determined by the presence of an appointment.
+    // No need to update time_slots.is_available here.
 
     return new Response(JSON.stringify(updatedAppointment), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
