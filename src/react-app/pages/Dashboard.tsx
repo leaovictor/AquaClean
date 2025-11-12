@@ -7,6 +7,26 @@ import { useAuth } from "@/react-app/AuthContext";
 
 const functionsBaseUrl = 'https://ilfoxowzpibbgrpveqrs.supabase.co/functions/v1';
 
+// Função utilitária para formatação de data
+const formatDate = (dateString: string) => {
+  return new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+// Função utilitária para formatação de hora
+const formatTime = (timeString: string) => {
+  // Assumes timeString is in "HH:MM" format
+  const [hours, minutes] = timeString.split(':');
+  const date = new Date();
+  date.setHours(parseInt(hours, 10));
+  date.setMinutes(parseInt(minutes, 10));
+  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+};
+
 export default function Dashboard() {
   const { currentUser, session, loading } = useAuth(); // Get session from context
   const navigate = useNavigate();
@@ -15,6 +35,8 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
   const [dataLoading, setDataLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
 
   useEffect(() => {
     if (!currentUser && !loading) {
@@ -61,13 +83,17 @@ export default function Dashboard() {
     }
   };
 
-  const handleCancel = async (appointmentId: number) => {
+  const handleCancel = (appointment: Appointment) => {
     if (!session) return;
+    setAppointmentToCancel(appointment);
+    setShowCancelConfirmation(true);
+  };
 
-    if (!window.confirm("Você tem certeza que deseja cancelar este agendamento?")) {
-      return;
-    }
+  const confirmCancellation = async () => {
+    if (!session || !appointmentToCancel) return;
 
+    setShowCancelConfirmation(false); // Close the popup immediately
+    
     try {
       const token = session.access_token;
       const response = await fetch(`${functionsBaseUrl}/cancel-appointment`, {
@@ -76,7 +102,7 @@ export default function Dashboard() {
           "Content-Type": "application/json",
           'Authorization': 'Bearer ' + token
         },
-        body: JSON.stringify({ appointment_id: appointmentId }),
+        body: JSON.stringify({ appointment_id: appointmentToCancel.id }),
       });
 
       if (response.ok) {
@@ -91,6 +117,7 @@ export default function Dashboard() {
       setToastMessage({ type: 'error', text: 'Erro ao cancelar agendamento: Problema de conexão.' });
       console.error("Error canceling appointment:", error);
     } finally {
+      setAppointmentToCancel(null); // Clear the appointment to cancel
       setTimeout(() => setToastMessage(null), 5000);
     }
   };
@@ -222,7 +249,7 @@ export default function Dashboard() {
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                           {appointment.service_type}
                         </span>
-                        <button onClick={() => handleCancel(appointment.id)} className="text-red-500 hover:text-red-700">
+                        <button onClick={() => handleCancel(appointment)} className="text-red-500 hover:text-red-700">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -324,6 +351,69 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Popup de Confirmação de Cancelamento */}
+      {showCancelConfirmation && appointmentToCancel && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Confirmar Cancelamento</h2>
+            <p className="text-gray-700 mb-6 text-center">Você tem certeza que deseja cancelar este agendamento?</p>
+            
+            <div className="space-y-4 mb-8">
+              {/* Detalhe do Veículo */}
+              <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                <Car className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Veículo</p>
+                  <p className="text-gray-700 text-sm">
+                    {appointmentToCancel.vehicle?.year}{' '}
+                    {appointmentToCancel.vehicle?.make}{' '}
+                    {appointmentToCancel.vehicle?.model}
+                  </p>
+                </div>
+              </div>
+
+              {/* Detalhe do Serviço */}
+              <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                <CheckCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Serviço</p>
+                  <p className="text-gray-700 text-sm">
+                    {appointmentToCancel.service_type}
+                  </p>
+                </div>
+              </div>
+
+              {/* Detalhe da Data/Hora */}
+              <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                <Calendar className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Data e Hora</p>
+                  <p className="text-gray-700 text-sm">
+                    {appointmentToCancel.timeSlot?.date && formatDate(appointmentToCancel.timeSlot.date)}{' '}
+                    às {appointmentToCancel.timeSlot?.time && formatTime(appointmentToCancel.timeSlot.time)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row-reverse justify-start sm:justify-between gap-3">
+              <button
+                onClick={confirmCancellation}
+                className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+              >
+                Confirmar Cancelamento
+              </button>
+              <button
+                onClick={() => setShowCancelConfirmation(false)}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 transition-colors"
+              >
+                Manter Agendamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
