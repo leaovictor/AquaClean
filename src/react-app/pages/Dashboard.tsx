@@ -133,7 +133,7 @@ export default function Dashboard() {
   }
 
   const upcomingAppointments = appointments.filter(apt => apt.status === 'scheduled');
-  const recentAppointments = appointments.filter(apt => apt.status === 'completed' || apt.status === 'canceled').slice(0, 3);
+  const recentAppointments = appointments.filter(apt => apt.status === 'completed' || apt.status === 'canceled');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
@@ -220,7 +220,7 @@ export default function Dashboard() {
                   onClick={() => navigate("/booking")}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium transition-colors"
                 >
-                  Agende Sua Primeira Lavagem
+                  {recentAppointments.length === 0 ? "Agende Sua Primeira Lavagem" : "Agendar Lavagem"}
                 </button>
               </div>
             ) : (
@@ -232,7 +232,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                         <span className="font-medium text-gray-900">
                           {new Date(appointment.start_time).toLocaleDateString('pt-BR', {
                             weekday: 'long',
@@ -275,7 +275,7 @@ export default function Dashboard() {
                 <p className="text-gray-600">Nenhuma atividade recente</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                 {recentAppointments.map((appointment: any) => (
                   <div
                     key={appointment.id}
@@ -297,8 +297,16 @@ export default function Dashboard() {
                                                       'agendada'}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {appointment.vehicle?.make} {appointment.vehicle?.model} - {new Date(appointment.timeSlot?.date).toLocaleDateString('pt-BR')}
+                        {appointment.vehicle?.year} {appointment.vehicle?.make} {appointment.vehicle?.model}
                       </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Agendado em: {new Date(appointment.created_at).toLocaleDateString('pt-BR')}
+                      </p>
+                      {appointment.status === 'canceled' && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Cancelado em: {new Date(appointment.start_time).toLocaleDateString('pt-BR')} {/* Usando start_time como placeholder para a data de cancelamento */}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}

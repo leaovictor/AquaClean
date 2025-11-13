@@ -53,14 +53,14 @@ serve(async (req) => {
     if (req.method === 'POST') {
       // Recebe todos os campos
       const body = await req.json();
-      const { vehicle_id, time_slot_id, appointment_date, appointment_time, service_type, special_instructions } = body;
+      const { vehicle_id, time_slot_id, start_time_utc, service_type, special_instructions } = body;
 
       // PARSING ROBUSTO: time_slot_id é um número (bigint).
       const slotId = Number(time_slot_id);
 
       // Verifica campos obrigatórios de forma mais explícita:
-      if (!vehicle_id || typeof slotId !== 'number' || isNaN(slotId) || !appointment_date || !appointment_time || !service_type) {
-        console.error('Missing fields in payload:', { vehicle_id, slotId, appointment_date, appointment_time, service_type });
+      if (!vehicle_id || typeof slotId !== 'number' || isNaN(slotId) || !start_time_utc || !service_type) {
+        console.error('Missing fields in payload:', { vehicle_id, slotId, start_time_utc, service_type });
         return new Response(JSON.stringify({ error: 'Missing required fields or invalid ID format.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -82,7 +82,7 @@ serve(async (req) => {
       }
 
       // 2. Calcular o horário de término e chamar a função RPC
-      const startTime = new Date(`${appointment_date}T${appointment_time}:00`);
+      const startTime = new Date(start_time_utc);
       let durationInMinutes = 0;
 
       switch (service_type) {

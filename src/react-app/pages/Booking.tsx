@@ -169,6 +169,10 @@ export default function Booking() {
 
     // Encontra o tipo de serviço selecionado para extrair o nome/ID
     const serviceDetails = serviceTypes.find(s => s.id === selectedService);
+
+    // Converte a data e hora selecionadas para um string ISO UTC
+    const selectedDateTime = new Date(`${selectedTimeSlot.date}T${selectedTimeSlot.time}:00`);
+    const utcDateTimeString = selectedDateTime.toISOString();
     
     try {
       const response = await fetch(`${functionsBaseUrl}/appointments`, {
@@ -180,10 +184,7 @@ export default function Booking() {
         body: JSON.stringify({
           vehicle_id: selectedVehicle,
           time_slot_id: selectedTimeSlot?.id,
-          // Não é estritamente necessário enviar data/hora aqui se a Edge Function usa o time_slot_id, 
-          // mas mantive para robustez, usando o formato que o slot já possui:
-          appointment_date: selectedTimeSlot?.date,
-          appointment_time: selectedTimeSlot?.time,
+          start_time_utc: utcDateTimeString, // Envia a data/hora em formato UTC ISO
           service_type: selectedService, // Enviar o ID do serviço
           special_instructions: specialInstructions || undefined,
         }),

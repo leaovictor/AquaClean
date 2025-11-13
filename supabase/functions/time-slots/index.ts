@@ -73,7 +73,21 @@ serve(async (req) => {
       for (const rule of rulesForDay) {
         const startTime = new Date(`${dateString}T${rule.start_time}`);
         const endTime = new Date(`${dateString}T${rule.end_time}`);
-        let currentSlotTime = new Date(startTime);
+        let currentSlotTime = new Date(`${dateString}T${rule.start_time}`);
+        const now = new Date(); // Get current time inside the loop for accurate comparison
+
+        // Adjust currentSlotTime to be at least 'now' if it's for today
+        if (currentDate.toDateString() === now.toDateString()) {
+          if (currentSlotTime < now) {
+            // If the rule's start time is in the past for today,
+            // start generating slots from the next available slot after 'now'
+            const nextHour = new Date(now.getTime() + SLOT_DURATION_MINUTES * 60000);
+            nextHour.setMinutes(0); // Round to the next hour
+            if (currentSlotTime < nextHour) {
+              currentSlotTime = nextHour;
+            }
+          }
+        }
 
         while (currentSlotTime < endTime) {
           const slotISO = currentSlotTime.toISOString();
