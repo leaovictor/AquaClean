@@ -3,8 +3,16 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/shared/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
+interface Profile {
+  role?: string;
+}
+
+export interface CurrentUser extends User {
+  profile?: Profile;
+}
+
 interface AuthContextType {
-  currentUser: User | null;
+  currentUser: CurrentUser | null;
   session: Session | null;
   loading: boolean;
 }
@@ -12,7 +20,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,15 +28,38 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-      setCurrentUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        setCurrentUser({ ...session.user, profile });
+      } else {
+        setCurrentUser(null);
+      }
+      
       setLoading(false);
     };
 
     getInitialSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
-      setCurrentUser(session?.user ?? null);
+
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        setCurrentUser({ ...session.user, profile });
+      } else {
+        setCurrentUser(null);
+      }
     });
 
     return () => {

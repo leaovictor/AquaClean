@@ -103,17 +103,21 @@ export default function Navigation() {
                     <User className="w-4 h-4" />
                     <span>Perfil</span>
                   </button>
-                  <div className="border-t border-gray-100 my-1"></div>
-                  <button
-                    onClick={() => {
-                      navigate("/admin");
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full flex items-center space-x-2 px-4 py-2 text-purple-600 hover:bg-purple-50 transition-colors"
-                  >
-                    <Car className="w-4 h-4" />
-                    <span>Painel Administrativo</span>
-                  </button>
+                  {currentUser?.profile?.role === 'admin' && (
+                    <>
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button
+                        onClick={() => {
+                          navigate("/admin");
+                          setIsMenuOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-2 px-4 py-2 text-purple-600 hover:bg-purple-50 transition-colors"
+                      >
+                        <Car className="w-4 h-4" />
+                        <span>Painel Administrativo</span>
+                      </button>
+                    </>
+                  )}
                   <div className="border-t border-gray-100 my-1"></div>
                   <button
                     onClick={() => {
