@@ -56,10 +56,10 @@ serve(async (req) => {
       });
     }
 
-    // Update appointment status to 'canceled'
+    // Update appointment status to 'canceled' and set the cancellation timestamp
     const { data: updatedAppointment, error: updateAppointmentError } = await supabaseClient
       .from('appointments')
-      .update({ status: 'canceled' })
+      .update({ status: 'canceled', canceled_at: new Date().toISOString() })
       .eq('id', appointment_id)
       .select()
       .single();

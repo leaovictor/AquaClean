@@ -14,6 +14,7 @@ import AdminReportsPage from "@/react-app/pages/admin/Reports";
 import AdminAvailabilityPage from "@/react-app/pages/admin/Availability";
 import SignIn from "@/react-app/pages/SignIn"; // Import SignIn component
 import SignUp from "@/react-app/pages/SignUp"; // Import SignUp component
+import AdminProtectedRoute from "@/react-app/components/AdminProtectedRoute";
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -73,57 +74,57 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminDashboardPage />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           />
           <Route
             path="/admin/dashboard"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminDashboardPage />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           />
           <Route
             path="/admin/appointments"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminAppointmentsPage />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           />
           <Route
             path="/admin/customers"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminCustomersPage />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           />
           <Route
             path="/admin/plans"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminPlansPage />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           />
           <Route
             path="/admin/reports"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminReportsPage />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           />
           <Route
             path="/admin/availability"
             element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminAvailabilityPage />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }
           />
         </Routes>
