@@ -1,14 +1,8 @@
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import AdminNavigation from "@/react-app/components/AdminNavigation";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2' // IMPORT PARA EXEMPLO
-
-// ⚠️ SUBSTITUA PELO SEU CLIENTE SUPABASE CONFIGURADO 
-// import { supabase } from '@/caminho/para/seu/supabaseClient'; 
-const supabase = createClient(
-  'SUA_URL_SUPABASE', // Substitua
-  'SUA_CHAVE_ANON'  // Substitua
-);
+// ⚠️ SUBSTITUA PELO SEU CLIENTE SUPABASE REAL
+import { supabase } from "@/lib/supabaseClient";
 
 import { 
   Users, 
@@ -18,9 +12,11 @@ import {
   Pencil,
   Trash2,
   Phone,
-  MapPin
+  MapPin,
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
-import { useAuth } from "@/react-app/AuthContext"; // Usado para obter currentUser
+import { useAuth } from "@/react-app/AuthContext";
 
 // Interface que define o formato de dados esperado da sua API
 interface AdminCustomer {
@@ -41,6 +37,9 @@ interface AdminCustomer {
   subscription_status?: string;
 }
 
+// URL base das suas Edge Functions (pode vir de uma variável de ambiente)
+const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+
 export default function AdminCustomers() {
   const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
@@ -50,8 +49,8 @@ export default function AdminCustomers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<AdminCustomer | null>(null);
   const [editableCustomer, setEditableCustomer] = useState<AdminCustomer | null>(null);
-  const [showModal, setShowModal] = useState(false); // Modal de Edição (UPDATE)
-  const [showCreateModal, setShowCreateModal] = useState(false); // Modal de Criação (CREATE)
+  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     email: '',
     password: '',
@@ -64,21 +63,41 @@ export default function AdminCustomers() {
     zip_code: '',
   });
 
-  // --- Funções de CRUD: READ (CORRIGIDA PARA INJETAR O TOKEN) ---
+  // --- Sistema de Feedback (Toast) ---
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
+  // Efeito para limpar a mensagem após 5 segundos
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+        setIsError(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  // Função auxiliar para exibir o toast
+  const showMessage = (msg: string, error = false) => {
+    setMessage(msg);
+    setIsError(error);
+  };
+
+  // --- Funções de CRUD ---
   const fetchCustomers = useCallback(async () => {
     setDataLoading(true);
     try {
-      // 1. Obtém o token JWT da sessão do usuário logado
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
 
       if (!token) {
-        console.error("Failed to fetch customers: No access token found. User might need to re-login.");
+        showMessage("Sessão expirada. Faça login novamente.", true);
+        navigate("/sign-in");
         return; 
       }
 
-      // 2. Faz a chamada HTTP, injetando o token no cabeçalho Authorization
-      const response = await fetch("/api/admin/customers", {
+      const response = await fetch(`${FUNCTIONS_URL}/admin-customers`, { // Rota corrigida
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`, 
@@ -90,32 +109,37 @@ export default function AdminCustomers() {
         setCustomers(data);
       } else {
         const errorText = await response.text();
-        console.error("Failed to fetch customers:", response.status, errorText);
+        showMessage(`Erro ao buscar clientes: ${errorText}`, true);
         setCustomers([]);
       }
     } catch (error) {
-      console.error("Error fetching customers:", error);
+      showMessage("Erro de conexão ao buscar clientes.", true);
       setCustomers([]);
     } finally {
       setDataLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
-  // --- Efeitos e Fetch de Dados ---
   useEffect(() => {
     if (!currentUser && !loading) {
       navigate("/");
       return;
     }
-
     if (currentUser) {
-      // Chama fetchCustomers, que agora injeta o token
       fetchCustomers();
     }
   }, [currentUser, loading, navigate, fetchCustomers]);
 
   useEffect(() => {
-    filterCustomers();
+    let filtered = customers;
+    if (searchTerm) {
+      filtered = filtered.filter(customer =>
+        (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (customer.first_name && customer.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (customer.last_name && customer.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    setFilteredCustomers(filtered);
   }, [customers, searchTerm]);
 
   useEffect(() => {
@@ -124,18 +148,16 @@ export default function AdminCustomers() {
     }
   }, [selectedCustomer]);
 
-  // --- Funções de CRUD: UPDATE (AJUSTADA PARA ATUALIZAÇÃO OTIMIZADA) ---
-
   const handleSave = async () => {
     if (!editableCustomer) return;
-
     try {
-      // 1. Obtém o token para autenticação
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
-      if (!token) return;
-
-      const response = await fetch(`/api/admin/customers/${editableCustomer.id}`, {
+      if (!token) {
+        showMessage("Sessão expirada.", true);
+        return;
+      }
+      const response = await fetch(`${FUNCTIONS_URL}/admin-customers/${editableCustomer.id}`, { // Rota corrigida
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -146,31 +168,29 @@ export default function AdminCustomers() {
 
       if (response.ok) {
         const updatedCustomer = await response.json(); 
-        
-        // Atualiza o estado: Substitui o objeto antigo pelo atualizado
         setCustomers(prevCustomers => prevCustomers.map(c => 
           c.id === updatedCustomer.id ? { ...c, ...updatedCustomer } : c
         ));
-        
         setShowModal(false);
+        showMessage("Cliente atualizado com sucesso!");
       } else {
-        console.error("Failed to update customer");
+        const errorData = await response.json();
+        showMessage(errorData.error || "Falha ao atualizar cliente.", true);
       }
     } catch (error) {
-      console.error("Error updating customer:", error);
+      showMessage("Ocorreu um erro de rede ao atualizar o cliente.", true);
     }
   };
 
-  // --- Funções de CRUD: CREATE (AJUSTADA PARA REFAZER FETCH) ---
-
   const handleCreate = async () => {
     try {
-      // 1. Obtém o token para autenticação
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
-      if (!token) return;
-
-      const response = await fetch('/api/admin/customers', {
+      if (!token) {
+        showMessage("Sessão expirada.", true);
+        return;
+      }
+      const response = await fetch(`${FUNCTIONS_URL}/admin-customers`, { // Rota corrigida
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,97 +200,83 @@ export default function AdminCustomers() {
       });
 
       if (response.ok) {
-        
         setShowCreateModal(false);
         setNewCustomer({
           email: '', password: '', first_name: '', last_name: '', 
           phone: '', address: '', city: '', state: '', zip_code: '',
         });
-        
-        // Refaz a busca para incluir o novo cliente com todos os dados agregados
-        await fetchCustomers();
-
+        await fetchCustomers(); // Atualiza a lista
+        showMessage("Cliente criado com sucesso!");
       } else {
-        console.error("Failed to create customer");
+        const errorData = await response.json();
+        showMessage(errorData.error || "Falha ao criar cliente.", true);
       }
     } catch (error) {
-      console.error("Error creating customer:", error);
+      showMessage("Ocorreu um erro de rede ao criar o cliente.", true);
     }
   };
 
-  // --- Funções de CRUD: DELETE (AJUSTADA PARA FILTRAR O ESTADO) ---
-
   const handleDelete = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.")) {
+    if (window.confirm("Tem certeza que deseja excluir este cliente? Esta ação é irreversível.")) {
       try {
-        // 1. Obtém o token para autenticação
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;
-        if (!token) return;
-
-        const response = await fetch(`/api/admin/customers/${id}`, {
+        if (!token) {
+          showMessage("Sessão expirada.", true);
+          return;
+        }
+        const response = await fetch(`${FUNCTIONS_URL}/admin-customers/${id}`, { // Rota corrigida
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`, 
-          },
+          headers: { 'Authorization': `Bearer ${token}` },
         });
 
         if (response.ok) {
-          // Remove o cliente deletado da lista
           setCustomers(prevCustomers => prevCustomers.filter(c => c.id !== id));
+          showMessage("Cliente excluído com sucesso!");
         } else {
-          console.error("Failed to delete customer");
+          const errorData = await response.json();
+          showMessage(errorData.error || "Falha ao excluir cliente.", true);
         }
       } catch (error) {
-        console.error("Error deleting customer:", error);
+        showMessage("Ocorreu um erro de rede ao excluir o cliente.", true);
       }
     }
   };
 
   // --- Funções Auxiliares de Exibição ---
-
-  const filterCustomers = () => {
-    let filtered = customers;
-
-    if (searchTerm) {
-      filtered = filtered.filter(customer => 
-        (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (customer.first_name && customer.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (customer.last_name && customer.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    setFilteredCustomers(filtered);
-  };
-
   const getCustomerName = (customer: AdminCustomer) => {
-    if (customer.first_name || customer.last_name) {
-      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
-    }
-    return customer.email;
+    return `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.email;
   };
 
   const getCustomerAddress = (customer: AdminCustomer) => {
-    const parts = [customer.address, customer.city, customer.state, customer.zip_code].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : 'Sem endereço';
+    return [customer.address, customer.city, customer.state, customer.zip_code].filter(Boolean).join(', ') || 'Sem endereço';
   };
 
   if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-pulse text-gray-600">
-          <Users className="w-12 h-12" />
-        </div>
+        <Users className="w-12 h-12 animate-pulse text-gray-500" />
       </div>
     );
   }
 
-  // --- Renderização Principal ---
+  // --- Renderização ---
   return (
     <div className="min-h-screen bg-gray-100">
       <AdminNavigation />
       
+      {/* Componente Toast */}
+      {message && (
+        <div
+          className={`fixed top-24 right-5 p-4 rounded-xl shadow-2xl text-white flex items-center z-[100] transition-transform duration-300 transform ${isError ? 'bg-red-600' : 'bg-green-600'}`}
+        >
+          {isError ? <AlertCircle className="mr-3" /> : <CheckCircle className="mr-3" />}
+          {message}
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* ... O restante do JSX permanece o mesmo ... */}
         {/* Cabeçalho e Botão Criar */}
         <div className="mb-8 flex justify-between items-center">
           <div>
@@ -305,7 +311,7 @@ export default function AdminCustomers() {
           </div>
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <div className="text-2xl font-bold text-gray-900">
-              {(customers.reduce((sum, c) => sum + c.total_spent, 0) / customers.length || 0).toFixed(0)}
+              {(customers.reduce((sum, c) => sum + c.total_spent, 0) / (customers.length || 1)).toFixed(0)}
             </div>
             <p className="text-gray-600">Gasto Médio por Cliente</p>
           </div>
@@ -437,6 +443,7 @@ export default function AdminCustomers() {
           )}
         </div>
 
+        {/* ... Modais de Edição e Criação ... */}
         {/* Modal de Edição (UPDATE) */}
         {showModal && editableCustomer && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -675,6 +682,7 @@ export default function AdminCustomers() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

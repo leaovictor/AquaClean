@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, Settings, Bell, Clock } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext";
-import { supabase } from "@/shared/supabase"; // Import supabase client
+import { supabase } from "@/lib/supabaseClient"; // Caminho corrigido
 
 export default function AdminNavigation() {
   const { currentUser } = useAuth(); // Remove 'auth' from destructuring
@@ -22,9 +22,8 @@ export default function AdminNavigation() {
   const navItems = [
     { path: "/admin/dashboard", icon: BarChart3, label: "Painel" },
     { path: "/admin/appointments", icon: Calendar, label: "Agendamentos" },
-    { path: "/admin/availability", icon: Clock, label: "Disponibilidade" },
     { path: "/admin/customers", icon: Users, label: "Clientes" },
-    { path: "/admin/plans", icon: CreditCard, label: "Planos" },
+    { path: "/admin/assets", icon: Settings, label: "Ativos" },
     { path: "/admin/reports", icon: FileText, label: "Relatórios" },
   ];
 

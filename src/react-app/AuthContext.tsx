@@ -1,6 +1,6 @@
 // src/react-app/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/shared/supabase';
+import { supabase } from '@/lib/supabaseClient'; // Caminho corrigido
 import type { Session, User } from '@supabase/supabase-js';
 
 interface Profile {

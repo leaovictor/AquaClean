@@ -12,6 +12,7 @@ import AdminCustomersPage from "@/react-app/pages/admin/Customers";
 import AdminPlansPage from "@/react-app/pages/admin/Plans";
 import AdminReportsPage from "@/react-app/pages/admin/Reports";
 import AdminTimeSlotManagerPage from "@/react-app/pages/admin/TimeSlotManager";
+import AdminAssetsPage from "@/react-app/pages/admin/Assets"; // Importar o novo componente
 import SignIn from "@/react-app/pages/SignIn"; // Import SignIn component
 import SignUp from "@/react-app/pages/SignUp"; // Import SignUp component
 import AdminProtectedRoute from "@/react-app/components/AdminProtectedRoute";
@@ -124,6 +125,14 @@ export default function App() {
             element={
               <AdminProtectedRoute>
                 <AdminTimeSlotManagerPage />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/assets"
+            element={
+              <AdminProtectedRoute>
+                <AdminAssetsPage />
               </AdminProtectedRoute>
             }
           />
