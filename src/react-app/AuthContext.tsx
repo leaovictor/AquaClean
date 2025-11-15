@@ -26,38 +26,48 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
         
-        setCurrentUser({ ...session.user, profile });
-      } else {
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          setCurrentUser({ ...session.user, profile });
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (error) {
+        console.error("Error getting initial session:", error);
         setCurrentUser(null);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
+      try {
+        setSession(session);
 
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        setCurrentUser({ ...session.user, profile });
-      } else {
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          setCurrentUser({ ...session.user, profile });
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (error) {
+        console.error("Error in onAuthStateChange:", error);
         setCurrentUser(null);
       }
     });

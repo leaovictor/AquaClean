@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash, Loader2, Calendar, Clock } from 'lucide-react';
-
 import { supabase } from '../../../shared/supabase';
+import AdminNavigation from "@/react-app/components/AdminNavigation";
+import { useAuth } from "@/react-app/AuthContext";
 
 
 // --- TYPE DEFINITIONS ---
@@ -35,41 +36,6 @@ const minutesToTime = (totalMinutes: number): string => {
 };
 
 // --- MOCK/HELPER COMPONENTS AND HOOKS ---
-
-// 1. Placeholder for AdminNavigation
-const AdminNavigation = () => (
-  <header className="bg-gray-800 text-white shadow-lg">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-      <h2 className="text-xl font-semibold">Painel de Administração de Agendamentos</h2>
-    </div>
-  </header>
-);
-
-// 2. Auth Hook Implementation (Mantendo a estrutura do Canvas)
-const useAuth = () => {
-    const [userId, setUserId] = useState<string | null>(null);
-    const [isAuthReady, setIsAuthReady] = useState(false);
-
-    useEffect(() => {
-        const fetchUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUserId(user?.id || null);
-            setIsAuthReady(true);
-        };
-
-        fetchUser();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUserId(session?.user?.id || null);
-        });
-
-        return () => {
-            authListener.subscription.unsubscribe();
-        };
-    }, []);
-
-    return { userId, isAuthReady, supabase };
-};
 
 // 3. Custom Confirmation Modal
 interface ConfirmationModalProps {
@@ -447,7 +413,7 @@ function BatchTimeSlotModal({ onClose, onSaveBatch }: { onClose: () => void, onS
 // --- MAIN COMPONENT (TimeSlotManager) ---
 
 const TimeSlotManager = () => {
-  const { userId, isAuthReady, supabase } = useAuth(); // Usando Supabase mock client
+  const { currentUser, loading } = useAuth();
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSingleModal, setShowSingleModal] = useState(false);
@@ -463,7 +429,7 @@ const TimeSlotManager = () => {
 
   // 1. Fetching Data with Supabase Realtime
   useEffect(() => {
-    if (!isAuthReady) return;
+    if (loading) return;
 
     const fetchTimeSlots = async () => {
         setIsLoading(true);
@@ -499,7 +465,7 @@ const TimeSlotManager = () => {
     return () => {
         supabase.removeChannel(channel);
     };
-  }, [isAuthReady, supabase]);
+  }, [loading]);
 
 
   // 2. CRUD Operations (Slot Único)
@@ -580,7 +546,7 @@ const TimeSlotManager = () => {
   };
 
 
-  if (!isAuthReady) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mr-2" />
@@ -598,7 +564,7 @@ const TimeSlotManager = () => {
             <h1 className="text-4xl font-extrabold text-gray-900 mb-1">Disponibilidade de Agendamentos</h1>
             <p className="text-gray-600 text-lg">Gerencie os slots de tempo recorrentes semanais usando Supabase.</p>
             <p className="text-xs text-gray-400 mt-2">
-                ID do Usuário (apenas referência): <span className="font-mono bg-gray-200 p-1 rounded-md">{userId}</span>
+                ID do Usuário (apenas referência): <span className="font-mono bg-gray-200 p-1 rounded-md">{currentUser?.id}</span>
             </p>
           </div>
           <div className="flex space-x-3 mt-4 sm:mt-0">
@@ -708,6 +674,4 @@ const TimeSlotManager = () => {
   );
 };
 
-export default function App() {
-    return <TimeSlotManager />;
-}
+export default TimeSlotManager;

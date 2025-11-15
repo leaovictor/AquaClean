@@ -11,7 +11,7 @@ import AdminAppointmentsPage from "@/react-app/pages/admin/Appointments";
 import AdminCustomersPage from "@/react-app/pages/admin/Customers";
 import AdminPlansPage from "@/react-app/pages/admin/Plans";
 import AdminReportsPage from "@/react-app/pages/admin/Reports";
-import AdminAvailabilityPage from "@/react-app/pages/admin/Availability";
+import AdminTimeSlotManagerPage from "@/react-app/pages/admin/TimeSlotManager";
 import SignIn from "@/react-app/pages/SignIn"; // Import SignIn component
 import SignUp from "@/react-app/pages/SignUp"; // Import SignUp component
 import AdminProtectedRoute from "@/react-app/components/AdminProtectedRoute";
@@ -120,10 +120,10 @@ export default function App() {
             }
           />
           <Route
-            path="/admin/availability"
+            path="/admin/time-slot-manager"
             element={
               <AdminProtectedRoute>
-                <AdminAvailabilityPage />
+                <AdminTimeSlotManagerPage />
               </AdminProtectedRoute>
             }
           />
