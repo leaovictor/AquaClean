@@ -9,7 +9,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       "/api": {
-        target: "http://localhost:54321",
+        target: "https://ilfoxowzpibbgrpveqrs.supabase.co",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },

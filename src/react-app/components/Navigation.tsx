@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Car, Calendar, User, CreditCard, LogOut, Bell } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext";
-import { supabase } from "@/shared/supabase"; // Import supabase client
+import { supabase } from "@/lib/supabaseClient"; // Import supabase client
 
 export default function Navigation() {
   const { currentUser } = useAuth(); // Remove 'auth' from destructuring

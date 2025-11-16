@@ -1,18 +1,24 @@
-import { useNavigate } from "react-router";
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
 import AdminNavigation from "@/react-app/components/AdminNavigation";
+// ⚠️ SUBSTITUA PELO SEU CLIENTE SUPABASE REAL
+import { supabase } from "@/lib/supabaseClient";
+
 import { 
   Users, 
   Search, 
   Car, 
   Calendar,
-  Eye,
-  Mail,
+  Pencil,
+  Trash2,
   Phone,
-  MapPin
+  MapPin,
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
+import { useAuth } from "@/react-app/AuthContext";
 
+// Interface que define o formato de dados esperado da sua API
 interface AdminCustomer {
   id: string;
   email: string;
@@ -31,92 +37,261 @@ interface AdminCustomer {
   subscription_status?: string;
 }
 
+// URL base das suas Edge Functions (pode vir de uma variável de ambiente)
+const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+
 export default function AdminCustomers() {
-  const { currentUser, loading } = useAuth(); // Use currentUser and loading from new context
+  const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<AdminCustomer[]>([]);
-  const [dataLoading, setDataLoading] = useState(true); // Renamed to avoid conflict with auth loading
+  const [dataLoading, setDataLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<AdminCustomer | null>(null);
+  const [editableCustomer, setEditableCustomer] = useState<AdminCustomer | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    email: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+  });
 
+  // --- Sistema de Feedback (Toast) ---
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
+  // Efeito para limpar a mensagem após 5 segundos
   useEffect(() => {
-    if (!currentUser && !loading) { // Use currentUser and loading
-      navigate("/");
-      return;
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+        setIsError(false);
+      }, 5000);
+      return () => clearTimeout(timer);
     }
+  }, [message]);
 
-    if (currentUser) { // Use currentUser
-      fetchCustomers();
-    }
-  }, [currentUser, loading, navigate]); // Update dependencies
+  // Função auxiliar para exibir o toast
+  const showMessage = (msg: string, error = false) => {
+    setMessage(msg);
+    setIsError(error);
+  };
 
-  useEffect(() => {
-    filterCustomers();
-  }, [customers, searchTerm]);
-
-  const fetchCustomers = async () => {
+  // --- Funções de CRUD ---
+  const fetchCustomers = useCallback(async () => {
+    setDataLoading(true);
     try {
-      const response = await fetch("/api/admin/customers");
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        showMessage("Sessão expirada. Faça login novamente.", true);
+        navigate("/sign-in");
+        return; 
+      }
+
+      const response = await fetch(`${FUNCTIONS_URL}/admin-customers`, { // Rota corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, 
+        },
+      });
+
       if (response.ok) {
         const data = await response.json();
         setCustomers(data);
+      } else {
+        const errorText = await response.text();
+        showMessage(`Erro ao buscar clientes: ${errorText}`, true);
+        setCustomers([]);
       }
     } catch (error) {
-      console.error("Error fetching customers:", error);
+      showMessage("Erro de conexão ao buscar clientes.", true);
+      setCustomers([]);
     } finally {
-      setDataLoading(false); // Use dataLoading
+      setDataLoading(false);
     }
-  };
+  }, [navigate]);
 
-  const filterCustomers = () => {
+  useEffect(() => {
+    if (!currentUser && !loading) {
+      navigate("/");
+      return;
+    }
+    if (currentUser) {
+      fetchCustomers();
+    }
+  }, [currentUser, loading, navigate, fetchCustomers]);
+
+  useEffect(() => {
     let filtered = customers;
-
     if (searchTerm) {
-      filtered = filtered.filter(customer => 
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      filtered = filtered.filter(customer =>
+        (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (customer.first_name && customer.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (customer.last_name && customer.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
-
     setFilteredCustomers(filtered);
+  }, [customers, searchTerm]);
+
+  useEffect(() => {
+    if (selectedCustomer) {
+      setEditableCustomer({ ...selectedCustomer });
+    }
+  }, [selectedCustomer]);
+
+  const handleSave = async () => {
+    if (!editableCustomer) return;
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) {
+        showMessage("Sessão expirada.", true);
+        return;
+      }
+      const response = await fetch(`${FUNCTIONS_URL}/admin-customers/${editableCustomer.id}`, { // Rota corrigida
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, 
+        },
+        body: JSON.stringify(editableCustomer),
+      });
+
+      if (response.ok) {
+        const updatedCustomer = await response.json(); 
+        setCustomers(prevCustomers => prevCustomers.map(c => 
+          c.id === updatedCustomer.id ? { ...c, ...updatedCustomer } : c
+        ));
+        setShowModal(false);
+        showMessage("Cliente atualizado com sucesso!");
+      } else {
+        const errorData = await response.json();
+        showMessage(errorData.error || "Falha ao atualizar cliente.", true);
+      }
+    } catch (error) {
+      showMessage("Ocorreu um erro de rede ao atualizar o cliente.", true);
+    }
   };
 
-  const getCustomerName = (customer: AdminCustomer) => {
-    if (customer.first_name || customer.last_name) {
-      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+  const handleCreate = async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) {
+        showMessage("Sessão expirada.", true);
+        return;
+      }
+      const response = await fetch(`${FUNCTIONS_URL}/admin-customers`, { // Rota corrigida
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, 
+        },
+        body: JSON.stringify(newCustomer),
+      });
+
+      if (response.ok) {
+        setShowCreateModal(false);
+        setNewCustomer({
+          email: '', password: '', first_name: '', last_name: '', 
+          phone: '', address: '', city: '', state: '', zip_code: '',
+        });
+        await fetchCustomers(); // Atualiza a lista
+        showMessage("Cliente criado com sucesso!");
+      } else {
+        const errorData = await response.json();
+        showMessage(errorData.error || "Falha ao criar cliente.", true);
+      }
+    } catch (error) {
+      showMessage("Ocorreu um erro de rede ao criar o cliente.", true);
     }
-    return customer.email;
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este cliente? Esta ação é irreversível.")) {
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) {
+          showMessage("Sessão expirada.", true);
+          return;
+        }
+        const response = await fetch(`${FUNCTIONS_URL}/admin-customers/${id}`, { // Rota corrigida
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          setCustomers(prevCustomers => prevCustomers.filter(c => c.id !== id));
+          showMessage("Cliente excluído com sucesso!");
+        } else {
+          const errorData = await response.json();
+          showMessage(errorData.error || "Falha ao excluir cliente.", true);
+        }
+      } catch (error) {
+        showMessage("Ocorreu um erro de rede ao excluir o cliente.", true);
+      }
+    }
+  };
+
+  // --- Funções Auxiliares de Exibição ---
+  const getCustomerName = (customer: AdminCustomer) => {
+    return `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.email;
   };
 
   const getCustomerAddress = (customer: AdminCustomer) => {
-    const parts = [customer.address, customer.city, customer.state, customer.zip_code].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : 'Sem endereço';
+    return [customer.address, customer.city, customer.state, customer.zip_code].filter(Boolean).join(', ') || 'Sem endereço';
   };
 
-  if (loading || dataLoading) { // Use combined loading states
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-pulse text-gray-600">
-          <Users className="w-12 h-12" />
-        </div>
+        <Users className="w-12 h-12 animate-pulse text-gray-500" />
       </div>
     );
   }
 
+  // --- Renderização ---
   return (
     <div className="min-h-screen bg-gray-100">
       <AdminNavigation />
       
+      {/* Componente Toast */}
+      {message && (
+        <div
+          className={`fixed top-24 right-5 p-4 rounded-xl shadow-2xl text-white flex items-center z-[100] transition-transform duration-300 transform ${isError ? 'bg-red-600' : 'bg-green-600'}`}
+        >
+          {isError ? <AlertCircle className="mr-3" /> : <CheckCircle className="mr-3" />}
+          {message}
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Clientes</h1>
-          <p className="text-gray-600">Gerencie as contas dos clientes e visualize suas atividades.</p>
+        {/* ... O restante do JSX permanece o mesmo ... */}
+        {/* Cabeçalho e Botão Criar */}
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Clientes</h1>
+            <p className="text-gray-600">Gerencie as contas dos clientes e visualize suas atividades.</p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+          >
+            Criar Cliente
+          </button>
         </div>
 
-        {/* Customer Stats */}
+        {/* Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <div className="text-2xl font-bold text-gray-900">{customers.length}</div>
@@ -136,13 +311,13 @@ export default function AdminCustomers() {
           </div>
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <div className="text-2xl font-bold text-gray-900">
-              {(customers.reduce((sum, c) => sum + c.total_spent, 0) / customers.length || 0).toFixed(0)}
+              {(customers.reduce((sum, c) => sum + c.total_spent, 0) / (customers.length || 1)).toFixed(0)}
             </div>
             <p className="text-gray-600">Gasto Médio por Cliente</p>
           </div>
         </div>
 
-        {/* Search */}
+        {/* Barra de Busca */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -156,7 +331,7 @@ export default function AdminCustomers() {
           </div>
         </div>
 
-        {/* Customers List */}
+        {/* Lista de Clientes (READ) */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -243,9 +418,15 @@ export default function AdminCustomers() {
                           setSelectedCustomer(customer);
                           setShowModal(true);
                         }}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-600 hover:text-blue-900 mr-4"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(customer.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
@@ -262,31 +443,84 @@ export default function AdminCustomers() {
           )}
         </div>
 
-        {/* Customer Detail Modal */}
-        {showModal && selectedCustomer && (
+        {/* ... Modais de Edição e Criação ... */}
+        {/* Modal de Edição (UPDATE) */}
+        {showModal && editableCustomer && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-2xl bg-white">
               <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Detalhes do Cliente
+                  Editar Cliente
                 </h3>
-                <p className="text-gray-600">{selectedCustomer.email}</p>
+                <p className="text-gray-600">{editableCustomer.email}</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-3">Informações Pessoais</h4>
                   <div className="space-y-3">
-                    <p><span className="font-medium">Nome:</span> {getCustomerName(selectedCustomer)}</p>
-                    <p><span className="font-medium">Email:</span> {selectedCustomer.email}</p>
-                    {selectedCustomer.phone && (
-                      <p><span className="font-medium">Telefone:</span> {selectedCustomer.phone}</p>
-                    )}
                     <div>
-                      <span className="font-medium">Endereço:</span>
-                      <div className="text-gray-600 text-sm mt-1">
-                        {getCustomerAddress(selectedCustomer)}
-                      </div>
+                      <label className="font-medium">Nome</label>
+                      <input
+                        type="text"
+                        value={editableCustomer.first_name || ''}
+                        onChange={(e) => setEditableCustomer({ ...editableCustomer, first_name: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Sobrenome</label>
+                      <input
+                        type="text"
+                        value={editableCustomer.last_name || ''}
+                        onChange={(e) => setEditableCustomer({ ...editableCustomer, last_name: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Telefone</label>
+                      <input
+                        type="text"
+                        value={editableCustomer.phone || ''}
+                        onChange={(e) => setEditableCustomer({ ...editableCustomer, phone: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Endereço</label>
+                      <input
+                        type="text"
+                        value={editableCustomer.address || ''}
+                        onChange={(e) => setEditableCustomer({ ...editableCustomer, address: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Cidade</label>
+                      <input
+                        type="text"
+                        value={editableCustomer.city || ''}
+                        onChange={(e) => setEditableCustomer({ ...editableCustomer, city: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Estado</label>
+                      <input
+                        type="text"
+                        value={editableCustomer.state || ''}
+                        onChange={(e) => setEditableCustomer({ ...editableCustomer, state: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">CEP</label>
+                      <input
+                        type="text"
+                        value={editableCustomer.zip_code || ''}
+                        onChange={(e) => setEditableCustomer({ ...editableCustomer, zip_code: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
                     </div>
                   </div>
                 </div>
@@ -294,48 +528,161 @@ export default function AdminCustomers() {
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-3">Atividade da Conta</h4>
                   <div className="space-y-3">
-                    <p><span className="font-medium">Membro desde:</span> {new Date(selectedCustomer.created_at).toLocaleDateString()}</p>
-                    <p><span className="font-medium">Veículos:</span> {selectedCustomer.vehicle_count}</p>
-                    <p><span className="font-medium">Total de agendamentos:</span> {selectedCustomer.appointment_count}</p>
-                    <p><span className="font-medium">Total gasto:</span> ${selectedCustomer.total_spent}</p>
-                    {selectedCustomer.last_appointment && (
-                      <p><span className="font-medium">Último agendamento:</span> {new Date(selectedCustomer.last_appointment).toLocaleDateString()}</p>
+                    <p><span className="font-medium">Membro desde:</span> {new Date(editableCustomer.created_at).toLocaleDateString()}</p>
+                    <p><span className="font-medium">Veículos:</span> {editableCustomer.vehicle_count}</p>
+                    <p><span className="font-medium">Total de agendamentos:</span> {editableCustomer.appointment_count}</p>
+                    <p><span className="font-medium">Total gasto:</span> ${editableCustomer.total_spent}</p>
+                    {editableCustomer.last_appointment && (
+                      <p><span className="font-medium">Último agendamento:</span> {new Date(editableCustomer.last_appointment).toLocaleDateString()}</p>
                     )}
                   </div>
                 </div>
               </div>
-
-              {selectedCustomer.subscription_status && (
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Assinatura</h4>
-                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                    selectedCustomer.subscription_status === 'active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {selectedCustomer.subscription_status}
-                  </span>
-                </div>
-              )}
 
               <div className="flex justify-end space-x-4">
                 <button
                   onClick={() => setShowModal(false)}
                   className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
                 >
-                  Fechar
+                  Cancelar
                 </button>
                 <button
-                  onClick={() => window.open(`mailto:${selectedCustomer.email}`)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  onClick={handleSave}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                 >
-                  <Mail className="w-4 h-4" />
-                  <span>Enviar E-mail ao Cliente</span>
+                  Salvar
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {/* Modal de Criação (CREATE) */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-2xl bg-white">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Criar Novo Cliente
+                </h3>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Login e Senha</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="font-medium">Email</label>
+                      <input
+                        type="email"
+                        value={newCustomer.email}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Senha</label>
+                      <input
+                        type="password"
+                        value={newCustomer.password}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, password: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                  </div>
+
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3 mt-6">Nome</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="font-medium">Nome</label>
+                      <input
+                        type="text"
+                        value={newCustomer.first_name}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, first_name: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Sobrenome</label>
+                      <input
+                        type="text"
+                        value={newCustomer.last_name}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, last_name: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Informações de Contato e Endereço</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="font-medium">Telefone</label>
+                      <input
+                        type="text"
+                        value={newCustomer.phone}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Endereço</label>
+                      <input
+                        type="text"
+                        value={newCustomer.address}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Cidade</label>
+                      <input
+                        type="text"
+                        value={newCustomer.city}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">Estado</label>
+                      <input
+                        type="text"
+                        value={newCustomer.state}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, state: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium">CEP</label>
+                      <input
+                        type="text"
+                        value={newCustomer.zip_code}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, zip_code: e.target.value })}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCreate}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  Criar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

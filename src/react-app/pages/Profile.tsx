@@ -23,7 +23,7 @@ export default function Profile() {
     model: "",
     year: "",
     color: "",
-    license_plate: "",
+    plate: "",
     is_default: false
   });
 
@@ -155,7 +155,7 @@ export default function Profile() {
           model: "",
           year: "",
           color: "",
-          license_plate: "",
+          plate: "",
           is_default: false
         });
         fetchData();
@@ -446,8 +446,8 @@ export default function Profile() {
                     </label>
                     <input
                       type="text"
-                      value={vehicleForm.license_plate}
-                      onChange={(e) => setVehicleForm({ ...vehicleForm, license_plate: e.target.value })}
+                      value={vehicleForm.plate}
+                      onChange={(e) => setVehicleForm({ ...vehicleForm, plate: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="ABC-123"
                     />
@@ -518,9 +518,9 @@ export default function Profile() {
                       </span>
                     )}
                   </div>
-                  {vehicle.license_plate && (
+                  {vehicle.plate && (
                     <p className="text-sm text-gray-600 mb-3">
-                      Placa: {vehicle.license_plate}
+                      Placa: {vehicle.plate}
                     </p>
                   )}
                 </div>
