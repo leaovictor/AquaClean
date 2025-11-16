@@ -4,6 +4,7 @@ import Navigation from "@/react-app/components/Navigation";
 import { Calendar, Car, Clock, Plus, ChevronRight, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import type { Appointment, Vehicle, UserProfile } from "@/shared/types";
 import { useAuth } from "@/react-app/AuthContext";
+import AppointmentSummaryModal from "@/react-app/components/AppointmentSummaryModal";
 
 const functionsBaseUrl = 'https://ilfoxowzpibbgrpveqrs.supabase.co/functions/v1';
 
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     if (!currentUser && !loading) {
@@ -87,6 +89,10 @@ export default function Dashboard() {
     if (!session) return;
     setAppointmentToCancel(appointment);
     setShowCancelConfirmation(true);
+  };
+
+  const handleViewSummary = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
   };
 
   const confirmCancellation = async () => {
@@ -228,7 +234,8 @@ export default function Dashboard() {
                 {upcomingAppointments.map((appointment: any) => (
                   <div
                     key={appointment.id}
-                    className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors"
+                    onClick={() => handleViewSummary(appointment)}
+                    className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
@@ -249,7 +256,7 @@ export default function Dashboard() {
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                           {appointment.service_type}
                         </span>
-                        <button onClick={() => handleCancel(appointment)} className="text-red-500 hover:text-red-700">
+                        <button onClick={(e) => { e.stopPropagation(); handleCancel(appointment); }} className="text-red-500 hover:text-red-700">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -279,7 +286,8 @@ export default function Dashboard() {
                 {recentAppointments.map((appointment: any) => (
                   <div
                     key={appointment.id}
-                    className="flex items-center space-x-4 p-4 border border-gray-200 rounded-xl"
+                    onClick={() => handleViewSummary(appointment)}
+                    className="flex items-center space-x-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       appointment.status === 'completed' ? 'bg-green-100' :
@@ -300,11 +308,11 @@ export default function Dashboard() {
                         {appointment.vehicle?.year} {appointment.vehicle?.make} {appointment.vehicle?.model}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Agendado em: {new Date(appointment.created_at).toLocaleDateString('pt-BR')}
+                        Agendado para: {new Date(appointment.start_time).toLocaleDateString('pt-BR')}
                       </p>
                       {appointment.status === 'canceled' && (
                         <p className="text-xs text-red-500 mt-1">
-                          Cancelado em: {new Date(appointment.start_time).toLocaleDateString('pt-BR')} {/* Usando start_time como placeholder para a data de cancelamento */}
+                          Cancelado em: {new Date(appointment.canceled_at).toLocaleDateString('pt-BR')} {/* Usando start_time como placeholder para a data de cancelamento */}
                         </p>
                       )}
                     </div>
@@ -359,6 +367,11 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      <AppointmentSummaryModal
+        appointment={selectedAppointment}
+        onClose={() => setSelectedAppointment(null)}
+      />
 
       {/* Popup de Confirmação de Cancelamento */}
       {showCancelConfirmation && appointmentToCancel && (
