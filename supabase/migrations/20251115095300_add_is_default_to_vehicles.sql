@@ -1,0 +1,2 @@
+ALTER TABLE vehicles
+ADD COLUMN is_default BOOLEAN DEFAULT FALSE;

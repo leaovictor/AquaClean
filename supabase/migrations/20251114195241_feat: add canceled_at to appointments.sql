@@ -1,0 +1,2 @@
+ALTER TABLE appointments
+ADD COLUMN canceled_at TIMESTAMP WITH TIME ZONE;

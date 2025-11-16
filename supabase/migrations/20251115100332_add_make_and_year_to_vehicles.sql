@@ -1,0 +1,3 @@
+ALTER TABLE vehicles
+ADD COLUMN make TEXT,
+ADD COLUMN year TEXT;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash, Loader2, Calendar, Clock } from 'lucide-react';
-import { supabase } from '../../../shared/supabase';
+import { useState, useEffect } from "react";
+import { Plus, Edit, Trash, Loader2, Calendar, Clock } from "lucide-react";
+import { supabase } from "../../../lib/supabaseClient";
 import AdminNavigation from "@/react-app/components/AdminNavigation";
 import { useAuth } from "@/react-app/AuthContext";
 

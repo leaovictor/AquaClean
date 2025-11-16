@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/shared/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/react-app/AuthContext';
 import AuthHeader from '@/react-app/components/AuthHeader'; // Import AuthHeader
