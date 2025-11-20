@@ -256,7 +256,7 @@ export default function AdminDashboard() {
                           {appointment.make} {appointment.model}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {appointment.service_type} • {formatDate(appointment.appointment_time)} às {formatTime(appointment.appointment_time)}
+                          {appointment.service_type} • {formatDate(appointment.start_time)} às {formatTime(appointment.start_time)}
                         </p>
                       </div>
                     </div>
