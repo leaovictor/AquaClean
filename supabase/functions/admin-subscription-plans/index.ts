@@ -14,97 +14,74 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
+    // --- Auth Check ---
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      })
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
     if (profile?.role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 403,
-      })
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const url = new URL(req.url)
-    const planId = url.pathname.split('/').pop()
+    const id = url.pathname.split('/').pop()
+    const isIdPresent = id && id !== 'admin-subscription-plans'
 
-    if (req.method === 'GET') {
-      const { data: plans, error } = await supabaseClient
-        .from('subscription_plans')
-        .select('*')
-        .order('created_at', { ascending: false })
+    switch (req.method) {
+        case 'GET':
+            const { data, error } = await supabaseClient
+                .from('subscription_plans')
+                .select('*')
+                .order('id')
 
-      if (error) {
-        throw error
-      }
+            if (error) throw error
+            return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-      return new Response(JSON.stringify(plans), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    } else if (req.method === 'POST') {
-      const plan = await req.json()
-      const { data: newPlan, error } = await supabaseClient
-        .from('subscription_plans')
-        .insert(plan)
-        .select()
-        .single()
+        case 'POST':
+            const body = await req.json()
+            const { data: created, error: createError } = await supabaseClient
+                .from('subscription_plans')
+                .insert(body)
+                .select()
+                .single()
 
-      if (error) {
-        throw error
-      }
+            if (createError) throw createError
+            return new Response(JSON.stringify(created), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-      return new Response(JSON.stringify(newPlan), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
-      })
-    } else if (req.method === 'PUT') {
-      const plan = await req.json()
-      const { data: updatedPlan, error } = await supabaseClient
-        .from('subscription_plans')
-        .update(plan)
-        .eq('id', planId)
-        .select()
-        .single()
+        case 'PUT':
+            if (!isIdPresent) return new Response('Missing ID', { status: 400 })
+            const updateBody = await req.json()
+            const { data: updated, error: updateError } = await supabaseClient
+                .from('subscription_plans')
+                .update(updateBody)
+                .eq('id', id)
+                .select()
+                .single()
 
-      if (error) {
-        throw error
-      }
+            if (updateError) throw updateError
+            return new Response(JSON.stringify(updated), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-      return new Response(JSON.stringify(updatedPlan), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    } else if (req.method === 'DELETE') {
-      const { error } = await supabaseClient
-        .from('subscription_plans')
-        .delete()
-        .eq('id', planId)
+        case 'DELETE':
+            if (!isIdPresent) return new Response('Missing ID', { status: 400 })
+            const { error: deleteError } = await supabaseClient
+                .from('subscription_plans')
+                .delete()
+                .eq('id', id)
 
-      if (error) {
-        throw error
-      }
+            if (deleteError) throw deleteError
+            return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-      return new Response(null, {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 204,
-      })
+        default:
+            return new Response('Method Not Allowed', { status: 405 })
     }
 
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 405,
-    })
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

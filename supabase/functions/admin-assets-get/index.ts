@@ -1,72 +1,81 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
-// Função para criar uma resposta JSON padronizada
-const createJsonResponse = (data: unknown, status = 200, headers = {}) => {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, "Content-Type": "application/json", ...headers },
-    status,
-  });
-};
-
-// Função para verificar se o usuário é um administrador
-const isAdmin = async (supabaseClient: any): Promise<boolean> => {
-  const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-  if (userError || !user) {
-    return false;
-  }
-  const { data: adminData, error: rpcError } = await supabaseClient.rpc('is_admin');
-  if (rpcError) {
-    console.error("RPC is_admin error:", rpcError);
-    return false;
-  }
-  return adminData === true;
-};
-
-serve(async (req: Request) => {
-  // Trata a requisição OPTIONS (preflight) para CORS
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Cria o cliente Supabase com o header de autenticação do request
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
-    );
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    )
 
-    // Verifica se o usuário tem a role 'admin'
-    const userIsAdmin = await isAdmin(supabaseClient);
-    if (!userIsAdmin) {
-      return createJsonResponse({ error: "Acesso negado. Requer privilégios de administrador." }, 403);
+    // --- Auth Check ---
+    const { data: { user } } = await supabaseClient.auth.getUser()
+    if (!user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Executa as consultas em paralelo para otimizar o tempo de resposta
-    const [plansResponse, slotsResponse, vehicleStatsResponse] = await Promise.all([
-      supabaseClient.from("subscription_plans").select("*"),
-      supabaseClient.from("time_slots").select("*"),
-      supabaseClient.rpc("get_vehicle_stats")
-    ]);
+    const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-    // Verifica erros em cada consulta individualmente
-    if (plansResponse.error) throw plansResponse.error;
-    if (slotsResponse.error) throw slotsResponse.error;
-    if (vehicleStatsResponse.error) throw vehicleStatsResponse.error;
+    if (profile?.role !== 'admin') {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
 
-    // Constrói o objeto de resposta final
-    const responsePayload = {
-      plans: plansResponse.data,
-      slots: slotsResponse.data,
-      vehicleStats: vehicleStatsResponse.data,
-    };
+    // 1. Fetch Plans
+    const { data: plans, error: plansError } = await supabaseClient
+        .from('subscription_plans')
+        .select('*')
+        .order('id')
+    if (plansError) throw plansError
 
-    return createJsonResponse(responsePayload);
+    // 2. Fetch Time Slots
+    const { data: slots, error: slotsError } = await supabaseClient
+        .from('time_slots')
+        .select('*')
+        .order('day_of_week')
+        .order('start_time')
+    if (slotsError) throw slotsError
+
+    // 3. Fetch Vehicle Stats
+    // Using the RPC function if available, or manual query
+    let vehicleStats = []
+    try {
+        const { data, error } = await supabaseClient.rpc('get_vehicle_stats')
+        if (!error) vehicleStats = data
+        else {
+             // Fallback manual query
+            const { data: vehicles } = await supabaseClient.from('vehicles').select('make, model')
+            const statsMap: Record<string, { make: string, model: string, vehicle_count: number }> = {}
+            vehicles?.forEach(v => {
+                const key = `${v.make}-${v.model}`
+                if (!statsMap[key]) statsMap[key] = { make: v.make, model: v.model, vehicle_count: 0 }
+                statsMap[key].vehicle_count++
+            })
+            vehicleStats = Object.values(statsMap)
+        }
+    } catch (e) {
+        console.error("Error fetching vehicle stats", e)
+    }
+
+    return new Response(JSON.stringify({
+        plans,
+        slots,
+        vehicleStats
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   } catch (error) {
-    console.error("Erro ao buscar ativos:", error);
-    return createJsonResponse({ error: error.message || "Ocorreu um erro interno no servidor." }, 500);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    })
   }
-});
+})

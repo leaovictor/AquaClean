@@ -13,21 +13,11 @@ import {
   CheckCircle,
   AlertTriangle
 } from "lucide-react";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
-
-interface AdminStats {
-  totalCustomers: number;
-  activeSubscriptions: number;
-  todayAppointments: number;
-  monthlyRevenue: number;
-  pendingAppointments: number;
-  completedAppointments: number;
-  canceledAppointments: number;
-  revenueGrowth: number;
-}
+import { useAuth } from "@/react-app/AuthContext";
+import { fetchAdminStats, fetchRecentAppointments, AdminStats, RecentAppointment } from "@/react-app/lib/admin-helpers";
 
 export default function AdminDashboard() {
-  const { currentUser, loading } = useAuth(); // Use currentUser and loading from new context
+  const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<AdminStats>({
     totalCustomers: 0,
@@ -39,44 +29,37 @@ export default function AdminDashboard() {
     canceledAppointments: 0,
     revenueGrowth: 0
   });
-  const [recentAppointments, setRecentAppointments] = useState<any[]>([]);
-  const [dataLoading, setDataLoading] = useState(true); // Renamed to avoid conflict with auth loading
+  const [recentAppointments, setRecentAppointments] = useState<RecentAppointment[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
-    if (!currentUser && !loading) { // Use currentUser and loading
+    if (!currentUser && !loading) {
       navigate("/");
       return;
     }
 
-    if (currentUser) { // Use currentUser
-      fetchAdminData();
+    if (currentUser) {
+      loadData();
     }
-  }, [currentUser, loading, navigate]); // Update dependencies
+  }, [currentUser, loading, navigate]);
 
-  const fetchAdminData = async () => {
+  const loadData = async () => {
     try {
-      const [statsRes, appointmentsRes] = await Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/admin/recent-appointments")
+      const [statsData, appointmentsData] = await Promise.all([
+        fetchAdminStats(),
+        fetchRecentAppointments()
       ]);
 
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        setStats(statsData);
-      }
-
-      if (appointmentsRes.ok) {
-        const appointmentsData = await appointmentsRes.json();
-        setRecentAppointments(appointmentsData);
-      }
+      setStats(statsData);
+      setRecentAppointments(appointmentsData);
     } catch (error) {
-      console.error("Error fetching admin data:", error);
+      console.error("Error loading admin data:", error);
     } finally {
-      setDataLoading(false); // Use dataLoading
+      setDataLoading(false);
     }
   };
 
-  if (loading || dataLoading) { // Use combined loading states
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="animate-pulse text-gray-600">
@@ -91,6 +74,7 @@ export default function AdminDashboard() {
       case 'completed':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'in_progress':
+      case 'scheduled': // Display scheduled as pending/in-progress visual
         return <Clock className="w-4 h-4 text-blue-600" />;
       case 'canceled':
         return <AlertTriangle className="w-4 h-4 text-red-600" />;
@@ -104,12 +88,21 @@ export default function AdminDashboard() {
       case 'completed':
         return 'bg-green-100 text-green-800';
       case 'in_progress':
+      case 'scheduled':
         return 'bg-blue-100 text-blue-800';
       case 'canceled':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -177,7 +170,7 @@ export default function AdminDashboard() {
               </div>
               <div className="text-right">
                 <span className="text-2xl font-bold text-gray-900">
-                  ${stats.monthlyRevenue.toLocaleString()}
+                  R$ {stats.monthlyRevenue.toLocaleString('pt-BR')}
                 </span>
                 <div className="flex items-center text-sm">
                   {stats.revenueGrowth >= 0 ? (
@@ -201,43 +194,44 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Status dos Agendamentos</h2>
             <div className="space-y-4">
-                              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                              <div className="flex items-center space-x-3">
-                                <CheckCircle className="w-6 h-6 text-green-600" />
-                                <span className="font-medium text-gray-900">Concluídos</span>
-                              </div>
-                              <span className="text-2xl font-bold text-green-600">
-                                {stats.completedAppointments}
-                              </span>
-                            </div>
-                            
-                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                              <div className="flex items-center space-x-3">
-                                <Clock className="w-6 h-6 text-blue-600" />
-                                <span className="font-medium text-gray-900">Pendentes</span>
-                              </div>
-                              <span className="text-2xl font-bold text-blue-600">
-                                {stats.pendingAppointments}
-                              </span>
-                            </div>
-                            
-                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                              <div className="flex items-center space-x-3">
-                                <AlertTriangle className="w-6 h-6 text-red-600" />
-                                <span className="font-medium text-gray-900">Cancelados</span>
-                              </div>
-                              <span className="text-2xl font-bold text-red-600">
-                                {stats.canceledAppointments}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <button
-                            onClick={() => navigate("/admin/appointments")}
-                            className="w-full mt-6 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition-colors"
-                          >
-                            Ver Todos os Agendamentos
-                          </button>          </div>
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  <span className="font-medium text-gray-900">Concluídos</span>
+                </div>
+                <span className="text-2xl font-bold text-green-600">
+                  {stats.completedAppointments}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
+                <div className="flex items-center space-x-3">
+                  <Clock className="w-6 h-6 text-blue-600" />
+                  <span className="font-medium text-gray-900">Pendentes</span>
+                </div>
+                <span className="text-2xl font-bold text-blue-600">
+                  {stats.pendingAppointments}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <span className="font-medium text-gray-900">Cancelados</span>
+                </div>
+                <span className="text-2xl font-bold text-red-600">
+                  {stats.canceledAppointments}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate("/admin/appointments")}
+              className="w-full mt-6 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-xl font-medium transition-colors"
+            >
+              Ver Todos os Agendamentos
+            </button>
+          </div>
 
           {/* Recent Appointments */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
@@ -250,7 +244,7 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {recentAppointments.slice(0, 5).map((appointment: any) => (
+                {recentAppointments.map((appointment) => (
                   <div
                     key={appointment.id}
                     className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
@@ -262,12 +256,12 @@ export default function AdminDashboard() {
                           {appointment.make} {appointment.model}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {appointment.service_type} • {appointment.date} at {appointment.time}
+                          {appointment.service_type} • {formatDate(appointment.appointment_time)} às {formatTime(appointment.appointment_time)}
                         </p>
                       </div>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(appointment.status)}`}>
-                      {appointment.status}
+                      {appointment.status === 'scheduled' ? 'Pendente' : appointment.status}
                     </span>
                   </div>
                 ))}

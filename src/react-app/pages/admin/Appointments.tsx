@@ -11,30 +11,15 @@ import {
   Edit2,
   Eye
 } from "lucide-react";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
-
-interface AdminAppointment {
-  id: number;
-  user_email: string;
-  customer_name: string;
-  make: string;
-  model: string;
-  year: number;
-  service_type: string;
-  status: string;
-  date: string;
-  time: string;
-  special_instructions?: string;
-  total_price?: number;
-  created_at: string;
-}
+import { useAuth } from "@/react-app/AuthContext";
+import { fetchAllAppointments, updateAppointmentStatus, AdminAppointment } from "@/react-app/lib/admin-helpers";
 
 export default function AdminAppointments() {
-  const { currentUser, loading } = useAuth(); // Use currentUser and loading from new context
+  const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<AdminAppointment[]>([]);
-  const [dataLoading, setDataLoading] = useState(true); // Renamed to avoid conflict with auth loading
+  const [dataLoading, setDataLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
@@ -42,31 +27,28 @@ export default function AdminAppointments() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    if (!currentUser && !loading) { // Use currentUser and loading
+    if (!currentUser && !loading) {
       navigate("/");
       return;
     }
 
-    if (currentUser) { // Use currentUser
-      fetchAppointments();
+    if (currentUser) {
+      loadAppointments();
     }
-  }, [currentUser, loading, navigate]); // Update dependencies
+  }, [currentUser, loading, navigate]);
 
   useEffect(() => {
     filterAppointments();
   }, [appointments, searchTerm, statusFilter, dateFilter]);
 
-  const fetchAppointments = async () => {
+  const loadAppointments = async () => {
     try {
-      const response = await fetch("/api/admin/appointments");
-      if (response.ok) {
-        const data = await response.json();
-        setAppointments(data);
-      }
+      const data = await fetchAllAppointments();
+      setAppointments(data);
     } catch (error) {
       console.error("Error fetching appointments:", error);
     } finally {
-      setDataLoading(false); // Use dataLoading
+      setDataLoading(false);
     }
   };
 
@@ -113,20 +95,18 @@ export default function AdminAppointments() {
     setFilteredAppointments(filtered);
   };
 
-  const updateAppointmentStatus = async (appointmentId: number, newStatus: string) => {
+  const handleUpdateStatus = async (appointmentId: number, newStatus: string) => {
     try {
-      const response = await fetch(`/api/admin/appointments/${appointmentId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        fetchAppointments();
-        setShowModal(false);
+      await updateAppointmentStatus(appointmentId, newStatus);
+      // Update local state immediately to reflect change
+      setAppointments(prev => prev.map(app =>
+        app.id === appointmentId ? { ...app, status: newStatus } : app
+      ));
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment({ ...selectedAppointment, status: newStatus });
       }
+      // Optionally close modal or keep it open
+      // setShowModal(false);
     } catch (error) {
       console.error("Error updating appointment:", error);
     }
@@ -137,6 +117,7 @@ export default function AdminAppointments() {
       case 'completed':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'in_progress':
+      case 'scheduled':
         return <Clock className="w-4 h-4 text-blue-600" />;
       case 'canceled':
         return <AlertTriangle className="w-4 h-4 text-red-600" />;
@@ -150,6 +131,7 @@ export default function AdminAppointments() {
       case 'completed':
         return 'bg-green-100 text-green-800';
       case 'in_progress':
+      case 'scheduled':
         return 'bg-blue-100 text-blue-800';
       case 'canceled':
         return 'bg-red-100 text-red-800';
@@ -158,7 +140,7 @@ export default function AdminAppointments() {
     }
   };
 
-  if (loading || dataLoading) { // Use combined loading states
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="animate-pulse text-gray-600">
@@ -282,7 +264,7 @@ export default function AdminAppointments() {
                       </div>
                       {appointment.total_price && (
                         <div className="text-sm text-gray-500">
-                          ${appointment.total_price}
+                          R$ {appointment.total_price}
                         </div>
                       )}
                     </td>
@@ -391,7 +373,7 @@ export default function AdminAppointments() {
                   <h4 className="text-lg font-semibold text-gray-900 mb-3">Informações Adicionais</h4>
                   <div className="space-y-2">
                     {selectedAppointment.total_price && (
-                      <p><span className="font-medium">Preço:</span> ${selectedAppointment.total_price}</p>
+                      <p><span className="font-medium">Preço:</span> R$ {selectedAppointment.total_price}</p>
                     )}
                     <p><span className="font-medium">Agendado em:</span> {new Date(selectedAppointment.created_at).toLocaleDateString()}</p>
                   </div>
@@ -414,7 +396,7 @@ export default function AdminAppointments() {
                   {['scheduled', 'in_progress', 'completed', 'canceled'].map((status) => (
                     <button
                       key={status}
-                      onClick={() => updateAppointmentStatus(selectedAppointment.id, status)}
+                      onClick={() => handleUpdateStatus(selectedAppointment.id, status)}
                       className={`px-4 py-2 rounded-xl font-medium transition-colors ${
                         selectedAppointment.status === status
                           ? 'bg-blue-600 text-white'
