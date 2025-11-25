@@ -11,14 +11,28 @@ import {
   AlertCircle,
   Trash2
 } from "lucide-react";
-import type { SubscriptionPlan } from "@/shared/types";
-import { useAuth } from "@/react-app/AuthContext"; // New Firebase AuthContext
+import { useAuth } from "@/react-app/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
+
+// Definição local do tipo, já que não temos acesso ao arquivo de tipos compartilhados
+interface SubscriptionPlan {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  duration_months: number;
+  washes_per_month: number;
+  features: string[];
+  is_active: boolean;
+}
+
+const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
 
 export default function AdminPlans() {
-  const { currentUser, loading } = useAuth(); // Use currentUser and loading from new context
+  const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [dataLoading, setDataLoading] = useState(true); // Renamed to avoid conflict with auth loading
+  const [dataLoading, setDataLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -34,27 +48,43 @@ export default function AdminPlans() {
   });
 
   useEffect(() => {
-    if (!currentUser && !loading) { // Use currentUser and loading
+    if (!currentUser && !loading) {
       navigate("/");
       return;
     }
 
-    if (currentUser) { // Use currentUser
+    if (currentUser) {
       fetchPlans();
     }
-  }, [currentUser, loading, navigate]); // Update dependencies
+  }, [currentUser, loading, navigate]);
 
   const fetchPlans = async () => {
+    setDataLoading(true);
     try {
-      const response = await fetch("/api/admin/subscription-plans");
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        console.error("No session token found");
+        return;
+      }
+
+      const response = await fetch(`${FUNCTIONS_URL}/admin-subscription-plans`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+      });
+
       if (response.ok) {
         const data = await response.json();
         setPlans(data);
+      } else {
+        console.error("Failed to fetch plans");
       }
     } catch (error) {
       console.error("Error fetching plans:", error);
     } finally {
-      setDataLoading(false); // Use dataLoading
+      setDataLoading(false);
     }
   };
 
@@ -79,7 +109,7 @@ export default function AdminPlans() {
       price: plan.price.toString(),
       duration_months: plan.duration_months.toString(),
       washes_per_month: plan.washes_per_month.toString(),
-      features: plan.features.length > 0 ? plan.features : [""],
+      features: plan.features && plan.features.length > 0 ? plan.features : [""],
       is_active: plan.is_active
     });
     setShowModal(true);
@@ -97,6 +127,9 @@ export default function AdminPlans() {
     }
 
     try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
       const planData = {
         name: planForm.name,
         description: planForm.description,
@@ -107,13 +140,17 @@ export default function AdminPlans() {
         is_active: planForm.is_active
       };
 
-      const url = editingPlan ? `/api/admin/subscription-plans/${editingPlan.id}` : "/api/admin/subscription-plans";
+      const url = editingPlan
+        ? `${FUNCTIONS_URL}/admin-subscription-plans/${editingPlan.id}`
+        : `${FUNCTIONS_URL}/admin-subscription-plans`;
+
       const method = editingPlan ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(planData),
       });
@@ -138,10 +175,14 @@ export default function AdminPlans() {
 
   const togglePlanStatus = async (planId: number, currentStatus: boolean) => {
     try {
-      const response = await fetch(`/api/admin/subscription-plans/${planId}`, {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const response = await fetch(`${FUNCTIONS_URL}/admin-subscription-plans/${planId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ is_active: !currentStatus }),
       });
@@ -160,8 +201,14 @@ export default function AdminPlans() {
     }
 
     try {
-      const response = await fetch(`/api/admin/subscription-plans/${planId}`, {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const response = await fetch(`${FUNCTIONS_URL}/admin-subscription-plans/${planId}`, {
         method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
       });
 
       if (response.ok) {
@@ -191,7 +238,7 @@ export default function AdminPlans() {
     setPlanForm({ ...planForm, features: newFeatures });
   };
 
-  if (loading || dataLoading) { // Use combined loading states
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="animate-pulse text-gray-600">
@@ -282,7 +329,7 @@ export default function AdminPlans() {
                 </div>
 
                 <ul className="space-y-3 mb-6">
-                  {plan.features.map((feature, index) => (
+                  {plan.features?.map((feature, index) => (
                     <li key={index} className="flex items-start space-x-2">
                       <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700 text-sm">{feature}</span>

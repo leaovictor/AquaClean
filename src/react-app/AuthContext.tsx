@@ -25,12 +25,15 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("AuthContext: useEffect started");
     const getInitialSession = async () => {
       try {
+        console.log("AuthContext: getInitialSession try");
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         
         if (session?.user) {
+          console.log("AuthContext: User found in session, fetching profile");
           const { data: profile } = await supabase
             .from('profiles')
             .select('role')
@@ -39,12 +42,14 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
           
           setCurrentUser({ ...session.user, profile });
         } else {
+          console.log("AuthContext: No user in session");
           setCurrentUser(null);
         }
       } catch (error) {
-        console.error("Error getting initial session:", error);
+        console.error("AuthContext: Error getting initial session:", error);
         setCurrentUser(null);
       } finally {
+        console.log("AuthContext: getInitialSession finally, setting loading to false");
         setLoading(false);
       }
     };
@@ -52,6 +57,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("AuthContext: onAuthStateChange triggered", _event);
       try {
         setSession(session);
 
@@ -67,7 +73,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
           setCurrentUser(null);
         }
       } catch (error) {
-        console.error("Error in onAuthStateChange:", error);
+        console.error("AuthContext: Error in onAuthStateChange:", error);
         setCurrentUser(null);
       }
     });

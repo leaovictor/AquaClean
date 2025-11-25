@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../../_shared/cors.ts'
+import { supabase } from '../_shared/supabaseClient.ts'
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -8,13 +9,13 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    const supabaseUserClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const { data: { user } } = await supabaseUserClient.auth.getUser()
     if (!user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -22,7 +23,7 @@ serve(async (req) => {
       })
     }
 
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabaseUserClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -35,7 +36,7 @@ serve(async (req) => {
       })
     }
 
-    const { count: totalCustomers } = await supabaseClient
+    const { count: totalCustomers } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('role', 'customer')
@@ -44,36 +45,67 @@ serve(async (req) => {
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
     const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString()
 
-    const { count: todayAppointments } = await supabaseClient
+    const { count: todayAppointments } = await supabase
       .from('appointments')
       .select('*', { count: 'exact', head: true })
       .gte('start_time', todayStart)
       .lt('start_time', todayEnd)
 
-    const { count: pendingAppointments } = await supabaseClient
+    const { count: pendingAppointments } = await supabase
       .from('appointments')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'scheduled')
 
-    const { count: completedAppointments } = await supabaseClient
+    const { count: completedAppointments } = await supabase
       .from('appointments')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'completed')
 
-    const { count: canceledAppointments } = await supabaseClient
+    const { count: canceledAppointments } = await supabase
       .from('appointments')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'canceled')
 
+    const { count: activeSubscriptions } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('subscription_status', 'active')
+
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString()
+    const nextMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString()
+
+    const { data: currentMonthAppointments } = await supabase
+      .from('appointments')
+      .select('total_price')
+      .eq('status', 'completed')
+      .gte('start_time', currentMonthStart)
+      .lt('start_time', nextMonthStart)
+
+    const monthlyRevenue = currentMonthAppointments?.reduce((acc, a) => acc + (a.total_price ?? 0), 0) ?? 0
+
+    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString()
+    const { data: lastMonthAppointments } = await supabase
+      .from('appointments')
+      .select('total_price')
+      .eq('status', 'completed')
+      .gte('start_time', lastMonthStart)
+      .lt('start_time', currentMonthStart)
+    
+    const lastMonthRevenue = lastMonthAppointments?.reduce((acc, a) => acc + (a.total_price ?? 0), 0) ?? 0
+
+    const revenueGrowth = lastMonthRevenue === 0 
+      ? (monthlyRevenue > 0 ? 100 : 0)
+      : ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+
     const stats = {
       totalCustomers: totalCustomers ?? 0,
-      activeSubscriptions: 0, // Not implemented yet
+      activeSubscriptions: activeSubscriptions ?? 0,
       todayAppointments: todayAppointments ?? 0,
-      monthlyRevenue: 0, // Not implemented yet
+      monthlyRevenue: monthlyRevenue,
       pendingAppointments: pendingAppointments ?? 0,
       completedAppointments: completedAppointments ?? 0,
       canceledAppointments: canceledAppointments ?? 0,
-      revenueGrowth: 0, // Not implemented yet
+      revenueGrowth: revenueGrowth,
     };
 
     return new Response(JSON.stringify(stats), {

@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { supabase } from '../../_shared/supabaseClient.ts'
 import { corsHeaders } from '../../_shared/cors.ts'
 
 serve(async (req) => {
@@ -8,13 +9,13 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    const supabaseUserClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const { data: { user } } = await supabaseUserClient.auth.getUser()
     if (!user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -22,7 +23,7 @@ serve(async (req) => {
       })
     }
 
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabaseUserClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -35,7 +36,7 @@ serve(async (req) => {
       })
     }
 
-    const { data: recentAppointments, error } = await supabaseClient
+    const { data: recentAppointments, error } = await supabase
       .from('appointments')
       .select(`
         id,
