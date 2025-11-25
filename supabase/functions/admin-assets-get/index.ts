@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { supabase } from '../_shared/supabaseClient.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
@@ -8,19 +9,19 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    const supabaseUserClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
     // --- Auth Check ---
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const { data: { user } } = await supabaseUserClient.auth.getUser()
     if (!user) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabaseUserClient
         .from('profiles')
         .select('role')
         .eq('id', user.id)
@@ -31,14 +32,14 @@ serve(async (req) => {
     }
 
     // 1. Fetch Plans
-    const { data: plans, error: plansError } = await supabaseClient
+    const { data: plans, error: plansError } = await supabase
         .from('subscription_plans')
         .select('*')
         .order('id')
     if (plansError) throw plansError
 
     // 2. Fetch Time Slots
-    const { data: slots, error: slotsError } = await supabaseClient
+    const { data: slots, error: slotsError } = await supabase
         .from('time_slots')
         .select('*')
         .order('day_of_week')
@@ -49,11 +50,11 @@ serve(async (req) => {
     // Using the RPC function if available, or manual query
     let vehicleStats = []
     try {
-        const { data, error } = await supabaseClient.rpc('get_vehicle_stats')
+        const { data, error } = await supabase.rpc('get_vehicle_stats')
         if (!error) vehicleStats = data
         else {
              // Fallback manual query
-            const { data: vehicles } = await supabaseClient.from('vehicles').select('make, model')
+            const { data: vehicles } = await supabase.from('vehicles').select('make, model')
             const statsMap: Record<string, { make: string, model: string, vehicle_count: number }> = {}
             vehicles?.forEach(v => {
                 const key = `${v.make}-${v.model}`

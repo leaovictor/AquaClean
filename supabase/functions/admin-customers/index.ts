@@ -1,8 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { supabase } from '../_shared/supabaseClient.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// Interface para garantir que o retorno da API corresponda à interface do frontend React
+// Interface to ensure the API return matches the React frontend interface
 interface AdminCustomerAPI {
   id: string;
   email: string;
@@ -22,20 +23,19 @@ interface AdminCustomerAPI {
 }
 
 serve(async (req) => {
-  // Configuração CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
+    const supabaseUserClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    // --- 1. Autenticação e Autorização do Admin ---
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    // --- 1. Admin Authentication and Authorization ---
+    const { data: { user } } = await supabaseUserClient.auth.getUser()
     if (!user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -43,7 +43,7 @@ serve(async (req) => {
       })
     }
 
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabaseUserClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -55,14 +55,11 @@ serve(async (req) => {
         status: 403,
       })
     }
-    // --- Fim da Autorização ---
+    // --- End of Authorization ---
 
     switch (req.method) {
-      // --- READ (GET) - Buscando clientes com dados agregados (CORRIGIDO) ---
       case 'GET': {
-        
-        // 1. Busca todos os perfis de clientes (sem subconsultas aninhadas)
-        const { data: profiles, error: profilesError } = await supabaseClient
+        const { data: profiles, error: profilesError } = await supabase
             .from('profiles')
             .select(`
                 id,
@@ -78,9 +75,7 @@ serve(async (req) => {
             `)
             .eq('role', 'customer')
 
-        if (profilesError) {
-            throw profilesError
-        }
+        if (profilesError) throw profilesError
 
         if (!profiles) {
           return new Response(JSON.stringify([]), {
@@ -89,19 +84,15 @@ serve(async (req) => {
           });
         }
 
-        // 2. Busca e Agrega dados de veículos e agendamentos para CADA perfil (Promise.all)
         const formattedCustomers: AdminCustomerAPI[] = await Promise.all(profiles.map(async (customer) => {
-            
-            // A. Contagem de Veículos
-            const { count: vehicleCount, error: vehicleError } = await supabaseClient
+            const { count: vehicleCount, error: vehicleError } = await supabase
                 .from('vehicles')
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', customer.id);
 
             if (vehicleError) console.error(`Error fetching vehicle count for ${customer.id}:`, vehicleError);
 
-            // B. Agendamentos e Cálculos Financeiros
-            const { data: appointmentsData, error: appointmentError } = await supabaseClient
+            const { data: appointmentsData, error: appointmentError } = await supabase
                 .from('appointments')
                 .select(`
                     total_price,
@@ -138,7 +129,7 @@ serve(async (req) => {
                 appointment_count,
                 total_spent,
                 last_appointment,
-                subscription_status: 'N/A', // Omissão: ajuste aqui se implementar a lógica de assinatura
+                subscription_status: 'N/A', 
             }
         }))
 
@@ -148,11 +139,9 @@ serve(async (req) => {
         })
       }
 
-      // --- UPDATE (PUT) ---
       case 'PUT': {
         const url = new URL(req.url)
-        const pathParts = url.pathname.split('/')
-        const id = pathParts[pathParts.length - 1]
+        const id = url.pathname.split('/').pop()
 
         if (!id) {
           return new Response(JSON.stringify({ error: 'Missing customer ID' }), {
@@ -163,7 +152,7 @@ serve(async (req) => {
 
         const body = await req.json()
 
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
           .from('profiles')
           .update({
             first_name: body.first_name,
@@ -176,25 +165,20 @@ serve(async (req) => {
           })
           .eq('id', id)
           .select()
-          .single() // Garante que retorne um único objeto
+          .single()
 
-        if (error) {
-          throw error
-        }
+        if (error) throw error
 
-        // Retorna o objeto atualizado
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         })
       }
 
-      // --- CREATE (POST) ---
       case 'POST': {
         const body = await req.json()
 
-        // Cria o usuário em auth.users (e espera o trigger criar o perfil)
-        const { data: userData, error: authError } = await supabaseClient.auth.admin.createUser({
+        const { data: userData, error: authError } = await supabase.auth.admin.createUser({
           email: body.email,
           password: body.password,
           email_confirm: true,
@@ -210,13 +194,10 @@ serve(async (req) => {
           }
         })
 
-        if (authError) {
-          throw authError
-        }
+        if (authError) throw authError
         
-        // Retorna a confirmação de criação
         return new Response(JSON.stringify({ 
-            id: userData.user!.id, // O '!' afirma que user existe
+            id: userData.user!.id,
             email: userData.user!.email,
             message: 'User created successfully. Frontend should refetch the customer list.',
         }), {
@@ -225,11 +206,9 @@ serve(async (req) => {
         })
       }
 
-      // --- DELETE (DELETE) ---
       case 'DELETE': {
         const url = new URL(req.url)
-        const pathParts = url.pathname.split('/')
-        const id = pathParts[pathParts.length - 1]
+        const id = url.pathname.split('/').pop()
 
         if (!id) {
           return new Response(JSON.stringify({ error: 'Missing customer ID' }), {
@@ -238,22 +217,16 @@ serve(async (req) => {
           })
         }
 
-        // 1. Deleta o perfil (se não houver ON DELETE CASCADE na FK)
-        const { error: profileError } = await supabaseClient
+        const { error: profileError } = await supabase
             .from('profiles')
             .delete()
             .eq('id', id)
             
-        if (profileError) {
-            throw profileError
-        }
+        if (profileError) throw profileError
 
-        // 2. Deleta o usuário de autenticação
-        const { data, error: authError } = await supabaseClient.auth.admin.deleteUser(id)
+        const { data, error: authError } = await supabase.auth.admin.deleteUser(id)
 
-        if (authError) {
-            throw authError
-        }
+        if (authError) throw authError
 
         return new Response(JSON.stringify({id, message: "User deleted"}), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

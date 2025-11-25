@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { supabase } from '../_shared/supabaseClient.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
@@ -8,19 +9,19 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    const supabaseUserClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
     // --- Auth Check ---
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const { data: { user } } = await supabaseUserClient.auth.getUser()
     if (!user) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabaseUserClient
         .from('profiles')
         .select('role')
         .eq('id', user.id)
@@ -43,7 +44,7 @@ serve(async (req) => {
 
     // --- 1. Revenue Stats ---
     // Current Month Revenue
-    const { data: currentMonthData } = await supabaseClient
+    const { data: currentMonthData } = await supabase
         .from('appointments')
         .select('total_price, appointment_time')
         .eq('status', 'completed')
@@ -52,7 +53,7 @@ serve(async (req) => {
     const currentMonthRevenue = currentMonthData?.reduce((sum, app) => sum + (Number(app.total_price) || 0), 0) || 0
 
     // Previous Month Revenue
-    const { data: lastMonthData } = await supabaseClient
+    const { data: lastMonthData } = await supabase
         .from('appointments')
         .select('total_price')
         .eq('status', 'completed')
@@ -66,7 +67,7 @@ serve(async (req) => {
         : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
 
     // Daily Revenue (for the selected period)
-    const { data: periodRevenueData } = await supabaseClient
+    const { data: periodRevenueData } = await supabase
         .from('appointments')
         .select('total_price, appointment_time')
         .eq('status', 'completed')
@@ -82,12 +83,12 @@ serve(async (req) => {
     const dailyRevenue = Object.entries(dailyRevenueMap).map(([date, amount]) => ({ date, amount }))
 
     // --- 2. Customer Stats ---
-    const { count: totalCustomers } = await supabaseClient
+    const { count: totalCustomers } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'customer')
 
-    const { count: newCustomersMonth } = await supabaseClient
+    const { count: newCustomersMonth } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'customer')
@@ -97,7 +98,7 @@ serve(async (req) => {
     const customerGrowth = 0 // implementing real growth would require historical data queries
 
     // --- 3. Appointment Stats ---
-    const { data: monthAppointments } = await supabaseClient
+    const { data: monthAppointments } = await supabase
         .from('appointments')
         .select('status')
         .gte('appointment_time', startOfMonth.toISOString())
@@ -108,7 +109,7 @@ serve(async (req) => {
     const completionRate = totalThisMonth > 0 ? Math.round((completedThisMonth / totalThisMonth) * 100) : 0
 
     // --- 4. Popular Services ---
-    const { data: allCompletedServices } = await supabaseClient
+    const { data: allCompletedServices } = await supabase
         .from('appointments')
         .select('service_type, total_price')
         .eq('status', 'completed')
@@ -131,13 +132,13 @@ serve(async (req) => {
     trendsStartDate.setMonth(trendsStartDate.getMonth() - 5)
     trendsStartDate.setDate(1)
 
-    const { data: trendsData } = await supabaseClient
+    const { data: trendsData } = await supabase
         .from('appointments')
         .select('appointment_time, total_price, status')
         .gte('appointment_time', trendsStartDate.toISOString())
 
     // Need to also count new customers per month for the trends
-    const { data: trendsCustomers } = await supabaseClient
+    const { data: trendsCustomers } = await supabase
         .from('profiles')
         .select('created_at')
         .eq('role', 'customer')
