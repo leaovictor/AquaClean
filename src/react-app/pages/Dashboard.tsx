@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
-import { Calendar, Car, Clock, Plus, ChevronRight, Trash2, CheckCircle, AlertCircle } from "lucide-react";
+import { Calendar, Car, Clock, Plus, ChevronRight, Trash2, CheckCircle, AlertCircle, UserX, Bell, MapPin, CalendarCheck, XCircle } from "lucide-react";
 import type { Appointment, Vehicle, UserProfile } from "@/shared/types";
 import { useAuth } from "@/react-app/AuthContext";
 import AppointmentSummaryModal from "@/react-app/components/AppointmentSummaryModal";
@@ -28,7 +28,49 @@ const formatTime = (timeString: string) => {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 };
 
+import { supabase } from "@/lib/supabaseClient";
+
+const statusFlow = ['scheduled', 'confirmed', 'in_progress', 'ready_for_pickup', 'completed'];
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case "completed":
+      return <CheckCircle className="w-4 h-4 text-green-600" />;
+    case "in_progress":
+      return <Car className="w-4 h-4 text-blue-600 animate-pulse" />;
+    case "ready_for_pickup":
+      return <Bell className="w-4 h-4 text-purple-600" />;
+    case "checked_in":
+      return <MapPin className="w-4 h-4 text-cyan-600" />;
+    case "confirmed":
+      return <CalendarCheck className="w-4 h-4 text-blue-600" />;
+    case "scheduled":
+      return <Clock className="w-4 h-4 text-gray-600" />;
+    case "canceled":
+    case "canceled_by_admin":
+    case "canceled_by_customer":
+      return <XCircle className="w-4 h-4 text-red-600" />;
+    case "no_show":
+      return <UserX className="w-4 h-4 text-gray-500" />;
+    default:
+      return <Calendar className="w-4 h-4 text-gray-600" />;
+  }
+};
+
 export default function Dashboard() {
+  const statusLabels: { [key: string]: string } = {
+    scheduled: "Agendado",
+    confirmed: "Confirmado",
+    checked_in: "Check-in",
+    in_progress: "Em Lavagem",
+    ready_for_pickup: "Pronto p/ Retirada",
+    completed: "Finalizado",
+    canceled_by_admin: "Cancelado pelo Lavajato",
+    canceled_by_customer: "Cancelado pelo Cliente",
+    no_show: "Não Compareceu",
+  };
+
+
   const { currentUser, session, loading } = useAuth(); // Get session from context
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -50,6 +92,24 @@ export default function Dashboard() {
       fetchDashboardData();
     }
   }, [currentUser, loading, navigate]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const channel = supabase
+      .channel('appointments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments', filter: `user_id=eq.${currentUser.id}` },
+        (payload) => {
+          console.log('Change received!', payload)
+          fetchDashboardData();
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel);
+    }
+  }, [currentUser]);
 
   const fetchDashboardData = async () => {
     if (!session) return; // Use session for check
@@ -83,12 +143,6 @@ export default function Dashboard() {
     } finally {
       setDataLoading(false);
     }
-  };
-
-  const handleCancel = (appointment: Appointment) => {
-    if (!session) return;
-    setAppointmentToCancel(appointment);
-    setShowCancelConfirmation(true);
   };
 
   const handleViewSummary = (appointment: Appointment) => {
@@ -138,8 +192,15 @@ export default function Dashboard() {
     );
   }
 
-  const upcomingAppointments = appointments.filter(apt => apt.status === 'scheduled');
-  const recentAppointments = appointments.filter(apt => apt.status === 'completed' || apt.status === 'canceled');
+  const activeStatuses = ['scheduled', 'confirmed', 'checked_in', 'in_progress', 'ready_for_pickup'];
+  const currentAppointment = appointments
+    .filter(apt => activeStatuses.includes(apt.status))
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+    [0];
+
+  const pastAppointments = appointments
+    .filter(apt => !activeStatuses.includes(apt.status))
+    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
@@ -171,7 +232,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <button
             onClick={() => navigate("/booking")}
             className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white p-6 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl group"
@@ -209,81 +270,123 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Upcoming Appointments */}
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Próximos Agendamentos
-              </h2>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* My Next Service */}
+          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 lg:col-span-2">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              Meu Próximo Serviço
+            </h2>
 
-            {upcomingAppointments.length === 0 ? (
+            {currentAppointment ? (
+              <div>
+                {/* Status Tracker - Mobile */}
+                <div className="lg:hidden">
+                  <ol className="relative ml-4 border-l border-gray-200">
+                    {statusFlow.map((status, index) => {
+                      const statusIndex = statusFlow.indexOf(currentAppointment.status);
+                      const isActive = index === statusIndex;
+                      const isCompleted = index < statusIndex;
+
+                      return (
+                        <li key={status} className="mb-10 ml-8">
+                          <span className={`absolute -left-4 flex items-center justify-center w-8 h-8 rounded-full ring-8 ring-white ${
+                            isActive ? 'bg-blue-100 text-blue-600' : isCompleted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {isCompleted ? <CheckCircle className="w-5 h-5" /> : getStatusIcon(status)}
+                          </span>
+                          <h3 className={`font-semibold ${isActive ? 'text-blue-600' : 'text-gray-900'}`}>{statusLabels[status as keyof typeof statusLabels]}</h3>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+                
+                {/* Status Tracker - Desktop */}
+                <div className="hidden lg:flex justify-between items-center text-xs text-center mb-8">
+                  {statusFlow.map((status, index, arr) => {
+                    const statusIndex = arr.indexOf(currentAppointment.status);
+                    const isActive = index === statusIndex;
+                    const isCompleted = index < statusIndex;
+
+                    return (
+                      <div key={status} className="flex-1 relative">
+                        <div className={`z-10 relative mx-auto w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                          isActive ? 'bg-blue-600 text-white shadow-lg' : isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+                        }`}>
+                          {isCompleted ? <CheckCircle className="w-6 h-6" /> : getStatusIcon(status)}
+                        </div>
+                        <p className={`mt-2 font-medium ${isActive ? 'text-blue-600' : 'text-gray-600'}`}>
+                          {statusLabels[status as keyof typeof statusLabels]}
+                        </p>
+                        {index < arr.length - 1 && (
+                          <div className={`absolute top-5 left-1/2 w-full h-0.5 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Appointment Details */}
+                <div className="bg-gray-50 rounded-xl p-4 mt-8">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <div className="mb-4 sm:mb-0">
+                      <p className="font-semibold text-lg text-gray-900">
+                        {currentAppointment.vehicle?.make} {currentAppointment.vehicle?.model} ({currentAppointment.vehicle?.year})
+                      </p>
+                      <p className="text-gray-600">{currentAppointment.service_type}</p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="font-semibold text-lg text-gray-900">
+                        {new Date(currentAppointment.start_time).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </p>
+                      <p className="text-gray-600">
+                        às {new Date(currentAppointment.start_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                  {(currentAppointment.status === 'scheduled' || currentAppointment.status === 'confirmed') && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+                      <button
+                        onClick={() => {
+                          setAppointmentToCancel(currentAppointment);
+                          setShowCancelConfirmation(true);
+                        }}
+                        className="text-sm font-medium text-red-600 hover:text-red-800"
+                      >
+                        Cancelar Agendamento
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">Nenhum agendamento próximo</p>
+                <p className="text-gray-600 mb-4">Nenhum agendamento ativo</p>
                 <button
                   onClick={() => navigate("/booking")}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium transition-colors"
                 >
-                  {recentAppointments.length === 0 ? "Agende Sua Primeira Lavagem" : "Agendar Lavagem"}
+                  Agendar uma Lavagem
                 </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {upcomingAppointments.map((appointment: any) => (
-                  <div
-                    key={appointment.id}
-                    onClick={() => handleViewSummary(appointment)}
-                    className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="font-medium text-gray-900">
-                          {new Date(appointment.start_time).toLocaleDateString('pt-BR', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })} at {new Date(appointment.start_time).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                          {appointment.service_type}
-                        </span>
-                        <button onClick={(e) => { e.stopPropagation(); handleCancel(appointment); }} className="text-red-500 hover:text-red-700">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 text-sm">
-                      {appointment.vehicle?.make} {appointment.vehicle?.model} {appointment.vehicle?.year && `(${appointment.vehicle?.year})`}
-                    </p>
-                  </div>
-                ))}
               </div>
             )}
           </div>
 
-          {/* Recent Activity */}
+          {/* Service History */}
           <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Atividade Recente
+              Histórico de Serviços
             </h2>
 
-            {recentAppointments.length === 0 ? (
+            {pastAppointments.length === 0 ? (
               <div className="text-center py-8">
                 <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">Nenhuma atividade recente</p>
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                {recentAppointments.map((appointment: any) => (
+                {pastAppointments.map((appointment: any) => (
                   <div
                     key={appointment.id}
                     onClick={() => handleViewSummary(appointment)}
@@ -291,30 +394,23 @@ export default function Dashboard() {
                   >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       appointment.status === 'completed' ? 'bg-green-100' :
-                      appointment.status === 'canceled' ? 'bg-red-100' :
-                      'bg-blue-100'
+                      (appointment.status === 'canceled_by_admin' || appointment.status === 'canceled_by_customer') ? 'bg-red-100' :
+                      'bg-gray-100'
                     }`}>
                       {appointment.status === 'completed' && <Car className="w-5 h-5 text-green-600" />}
-                      {appointment.status === 'canceled' && <Trash2 className="w-5 h-5 text-red-600" />}
-                      {appointment.status === 'scheduled' && <Calendar className="w-5 h-5 text-blue-600" />}
+                      {(appointment.status === 'canceled_by_admin' || appointment.status === 'canceled_by_customer') && <Trash2 className="w-5 h-5 text-red-600" />}
+                      {appointment.status === 'no_show' && <UserX className="w-5 h-5 text-gray-600" />}
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">
-                        {appointment.service_type} lavagem {appointment.status === 'completed' ? 'concluída' :
-                                                      appointment.status === 'canceled' ? 'cancelada' :
-                                                      'agendada'}
+                        {appointment.service_type} - {statusLabels[appointment.status as keyof typeof statusLabels]}
                       </p>
                       <p className="text-sm text-gray-600">
                         {appointment.vehicle?.year} {appointment.vehicle?.make} {appointment.vehicle?.model}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Agendado para: {new Date(appointment.start_time).toLocaleDateString('pt-BR')}
+                        Em: {new Date(appointment.start_time).toLocaleDateString('pt-BR')}
                       </p>
-                      {appointment.status === 'canceled' && (
-                        <p className="text-xs text-red-500 mt-1">
-                          Cancelado em: {new Date(appointment.canceled_at).toLocaleDateString('pt-BR')} {/* Usando start_time como placeholder para a data de cancelamento */}
-                        </p>
-                      )}
                     </div>
                   </div>
                 ))}

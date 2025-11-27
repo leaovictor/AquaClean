@@ -22,8 +22,20 @@ Deno.serve(async (req) => {
 
     const { id, status } = body;
 
+    // fetch previous
+    const { data: before } = await supabaseClient.from("appointments").select("status").eq("id", id).single();
+
     const { data: updated, error } = await supabaseClient.from("appointments").update({ status, updated_at: new Date().toISOString() }).eq("id", id).select().single();
     if (error) return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+
+    // insert log
+    await supabaseClient.from("appointment_logs").insert({
+      appointment_id: id,
+      action: "status_update",
+      previous_value: JSON.stringify({ status: before?.status ?? null }),
+      new_value: JSON.stringify({ status }),
+      admin_id: userData.user.id
+    });
 
     return new Response(JSON.stringify(updated), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (err) {

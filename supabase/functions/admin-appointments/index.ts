@@ -1,9 +1,7 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { supabase } from "../_shared/supabaseClient.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -38,11 +36,11 @@ serve(async (req) => {
     }
 
     if (req.method === "POST") {
-      const { page, pageSize } = await req.json();
+      const { page, pageSize, searchQuery, statusFilter } = await req.json();
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 
-      const { data, error, count } = await supabase
+      let query = supabaseUserClient
         .from("appointments")
         .select(
           `
@@ -59,7 +57,17 @@ serve(async (req) => {
           profiles ( first_name, last_name, email )
         `,
           { count: "exact" }
-        )
+        );
+
+      if (searchQuery) {
+        query = query.ilike("profiles.email", `%${searchQuery}%`);
+      }
+
+      if (statusFilter) {
+        query = query.eq("status", statusFilter);
+      }
+
+      const { data, error, count } = await query
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -71,29 +79,6 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ data, count }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    if (req.method === "PUT") {
-      const { id, status } = await req.json();
-
-      const { data, error } = await supabase
-        .from("appointments")
-        .update({ status })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
-
-      return new Response(JSON.stringify(data), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });

@@ -34,6 +34,9 @@ Deno.serve(async (req) => {
 
     const { id, new_start_time, new_time_slot_id } = await req.json();
 
+    // fetch previous
+    const { data: before } = await supabaseUserClient.from("appointments").select("start_time, time_slot_id").eq("id", id).single();
+
     const { data, error } = await supabaseUserClient
       .from("appointments")
       .update({
@@ -51,6 +54,15 @@ Deno.serve(async (req) => {
         status: 400,
       });
     }
+
+    // insert log
+    await supabaseUserClient.from("appointment_logs").insert({
+      appointment_id: id,
+      action: "reschedule",
+      previous_value: JSON.stringify({ start_time: before?.start_time, time_slot_id: before?.time_slot_id }),
+      new_value: JSON.stringify({ start_time: new_start_time, time_slot_id: new_time_slot_id }),
+      admin_id: user.id
+    });
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

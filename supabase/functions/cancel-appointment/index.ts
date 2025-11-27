@@ -1,10 +1,9 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -17,7 +16,7 @@ serve(async (req) => {
     }
 
     // Create a Supabase client with the user's token for RLS
-    const authHeader = req.headers.get('Authorization')!
+    const authHeader = req.headers.get('Authorization')!;
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -26,12 +25,17 @@ serve(async (req) => {
           headers: { Authorization: authHeader },
         },
       }
-    )
+    );
+    
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     // Fetch the appointment and its time_slot_id, ensuring RLS is applied
     const { data: appointment, error: appointmentError } = await supabaseClient
       .from('appointments')
-      .select('start_time, time_slot_id, confirmed_at')
+      .select('start_time, time_slot_id, confirmed_at, status')
       .eq('id', appointment_id)
       .single();
 
@@ -58,18 +62,24 @@ serve(async (req) => {
       }
     }
 
-    // Update appointment status to 'canceled' and set the cancellation timestamp
+    // Update appointment status to 'canceled_by_customer' and set the cancellation timestamp
     const { data: updatedAppointment, error: updateAppointmentError } = await supabaseClient
       .from('appointments')
-      .update({ status: 'canceled', canceled_at: new Date().toISOString() })
+      .update({ status: 'canceled_by_customer', canceled_at: new Date().toISOString() })
       .eq('id', appointment_id)
       .select()
       .single();
 
     if (updateAppointmentError) throw updateAppointmentError;
-
-    // The availability of a time slot is determined by the presence of an appointment.
-    // No need to update time_slots.is_available here.
+    
+    // insert log
+    await supabaseClient.from("appointment_logs").insert({
+      appointment_id: appointment_id,
+      action: "customer_cancellation",
+      previous_value: JSON.stringify({ status: appointment.status }),
+      new_value: JSON.stringify({ status: "canceled_by_customer" }),
+      user_id: user.id
+    });
 
     return new Response(JSON.stringify(updatedAppointment), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

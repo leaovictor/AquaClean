@@ -34,9 +34,12 @@ Deno.serve(async (req) => {
 
     const { id } = await req.json();
 
+    // fetch previous
+    const { data: before } = await supabaseUserClient.from("appointments").select("status").eq("id", id).single();
+
     const { data, error } = await supabaseUserClient
       .from("appointments")
-      .update({ status: "canceled" })
+      .update({ status: "canceled_by_admin", canceled_at: new Date().toISOString() })
       .eq("id", id)
       .select()
       .single();
@@ -47,6 +50,15 @@ Deno.serve(async (req) => {
         status: 400,
       });
     }
+
+    // insert log
+    await supabaseUserClient.from("appointment_logs").insert({
+      appointment_id: id,
+      action: "admin_cancellation",
+      previous_value: JSON.stringify({ status: before?.status ?? null }),
+      new_value: JSON.stringify({ status: "canceled_by_admin" }),
+      admin_id: user.id
+    });
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

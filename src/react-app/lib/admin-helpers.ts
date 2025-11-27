@@ -123,9 +123,11 @@ export async function fetchRecentAppointments(limit = 5): Promise<RecentAppointm
 // ------------------------------
 export async function fetchAllAppointments(
   page: number,
-  pageSize: number
+  pageSize: number,
+  searchQuery?: string,
+  statusFilter?: string
 ): Promise<{ data: AdminAppointment[]; count: number }> {
-  return invoke("admin-appointments", "POST", { page, pageSize });
+  return invoke("admin-appointments", "POST", { page, pageSize, searchQuery, statusFilter });
 }
 
 // ------------------------------
@@ -147,6 +149,20 @@ export async function updateAppointmentStatus(id: number, status: string) {
 // ------------------------------
 export async function cancelAppointment(id: number) {
   return invoke("admin-appointments-cancel", "PUT", { id });
+}
+
+// ------------------------------
+// FETCH APPOINTMENT LOGS
+// ------------------------------
+export async function fetchAppointmentLogs(appointment_id: number) {
+  return invoke("admin-appointment-logs", "POST", { appointment_id });
+}
+
+// ------------------------------
+// FETCH AVAILABLE SLOTS
+// ------------------------------
+export async function fetchAvailableSlots(date: string) {
+  return invoke("get-available-slots", "POST", { date });
 }
 
 // ------------------------------
