@@ -47,6 +47,7 @@ serve(async (req) => {
         .select(
           `
           id,
+          confirmed_at,
           user_id,
           service_type,
           status,

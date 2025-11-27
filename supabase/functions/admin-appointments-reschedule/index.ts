@@ -1,9 +1,7 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { supabase } from "../_shared/supabaseClient.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -30,17 +28,17 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (req.method !== "PATCH") {
-      return new Response("Method Not Allowed", { status: 405 });
+    if (req.method !== "PUT") {
+      return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
     }
 
-    const { id, newDate, newTimeSlotId } = await req.json();
+    const { id, new_start_time, new_time_slot_id } = await req.json();
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseUserClient
       .from("appointments")
       .update({
-        start_time: newDate,
-        time_slot_id: newTimeSlotId,
+        start_time: new_start_time,
+        time_slot_id: new_time_slot_id,
         status: "scheduled",
       })
       .eq("id", id)

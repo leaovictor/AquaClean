@@ -31,7 +31,7 @@ serve(async (req) => {
     // Fetch the appointment and its time_slot_id, ensuring RLS is applied
     const { data: appointment, error: appointmentError } = await supabaseClient
       .from('appointments')
-      .select('start_time, time_slot_id')
+      .select('start_time, time_slot_id, confirmed_at')
       .eq('id', appointment_id)
       .single();
 
@@ -44,16 +44,18 @@ serve(async (req) => {
       });
     }
 
-    // Use appointment.start_time directly as it's a TIMESTAMP WITH TIME ZONE
-    const appointmentDateTime = new Date(appointment.start_time);
-    const now = new Date();
-    const oneHour = 60 * 60 * 1000; // One hour in milliseconds
+    // If the appointment is confirmed, check the one-hour rule
+    if (appointment.confirmed_at) {
+      const appointmentDateTime = new Date(appointment.start_time);
+      const now = new Date();
+      const oneHour = 60 * 60 * 1000; // One hour in milliseconds
 
-    if (appointmentDateTime.getTime() - now.getTime() < oneHour) {
-      return new Response(JSON.stringify({ error: 'Appointments can only be canceled up to one hour before the scheduled time.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
+      if (appointmentDateTime.getTime() - now.getTime() < oneHour) {
+        return new Response(JSON.stringify({ error: 'Confirmed appointments can only be canceled up to one hour before the scheduled time.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
     }
 
     // Update appointment status to 'canceled' and set the cancellation timestamp

@@ -2,22 +2,40 @@ import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import AdminNavigation from "@/react-app/components/AdminNavigation";
 import {
-  Calendar,
   Clock,
   CheckCircle,
-  AlertTriangle,
   Car,
   Edit2,
-  Eye
-} from "lucide-react";
+  Eye,
+  Check,
+  XCircle,
+  Bell,
+  MapPin,
+  UserX,
+  CalendarCheck,
+  Calendar,
+}
+from "lucide-react";
 import { useAuth } from "@/react-app/AuthContext";
 import {
   fetchAllAppointments,
   updateAppointmentStatus,
   cancelAppointment,
   rescheduleAppointment,
+  confirmAppointment,
   AdminAppointment,
 } from "@/react-app/lib/admin-helpers";
+
+const statusLabels: { [key: string]: string } = {
+  scheduled: "Agendado",
+  confirmed: "Confirmado",
+  checked_in: "Check-in",
+  in_progress: "Em Lavagem",
+  ready_for_pickup: "Pronto para Retirada",
+  completed: "Finalizado",
+  canceled: "Cancelado",
+  no_show: "Não Compareceu",
+};
 
 export default function AdminAppointments() {
   const { currentUser, loading } = useAuth();
@@ -136,15 +154,38 @@ export default function AdminAppointments() {
     }
   };
 
+  const handleConfirm = async () => {
+    if (!selectedAppointment) return;
+
+    try {
+      await confirmAppointment(selectedAppointment.id);
+      setAppointments(prev => prev.map(a => (a.id === selectedAppointment.id ? { ...a, confirmed_at: new Date().toISOString() } : a)));
+      setSelectedAppointment(prev => (prev ? { ...prev, confirmed_at: new Date().toISOString() } : prev));
+      alert("Agendamento confirmado com sucesso.");
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao confirmar agendamento");
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case "in_progress":
+        return <Car className="w-4 h-4 text-blue-600 animate-pulse" />;
+      case "ready_for_pickup":
+        return <Bell className="w-4 h-4 text-purple-600" />;
+      case "checked_in":
+        return <MapPin className="w-4 h-4 text-cyan-600" />;
+      case "confirmed":
+        return <CalendarCheck className="w-4 h-4 text-blue-600" />;
       case "scheduled":
-        return <Clock className="w-4 h-4 text-blue-600" />;
+        return <Clock className="w-4 h-4 text-gray-600" />;
       case "canceled":
-        return <AlertTriangle className="w-4 h-4 text-red-600" />;
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      case "no_show":
+        return <UserX className="w-4 h-4 text-gray-500" />;
       default:
         return <Calendar className="w-4 h-4 text-gray-600" />;
     }
@@ -155,10 +196,19 @@ export default function AdminAppointments() {
       case "completed":
         return "bg-green-100 text-green-800";
       case "in_progress":
-      case "scheduled":
+        return "bg-blue-100 text-blue-800 animate-pulse";
+      case "ready_for_pickup":
+        return "bg-purple-100 text-purple-800";
+      case "checked_in":
+        return "bg-cyan-100 text-cyan-800";
+      case "confirmed":
         return "bg-blue-100 text-blue-800";
+      case "scheduled":
+        return "bg-gray-100 text-gray-800";
       case "canceled":
         return "bg-red-100 text-red-800";
+      case "no_show":
+        return "bg-gray-200 text-gray-600";
       default:
         return "bg-yellow-100 text-yellow-800";
     }
@@ -236,7 +286,7 @@ export default function AdminAppointments() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
                           {getStatusIcon(appointment.status)}
-                          <span className="capitalize">{appointment.status === 'scheduled' ? 'Agendado' : appointment.status === 'in_progress' ? 'Em Progresso' : appointment.status === 'completed' ? 'Concluído' : appointment.status === 'canceled' ? 'Cancelado' : appointment.status}</span>
+                          <span className="capitalize">{statusLabels[appointment.status] || appointment.status}</span>
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -270,7 +320,10 @@ export default function AdminAppointments() {
         {/* Appointment Detail Modal */}
         {showModal && selectedAppointment && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-2xl bg-white">
+            <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-2xl bg-white">
+            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <XCircle className="w-6 h-6" />
+              </button>
               <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Detalhes do Agendamento</h3>
                 <p className="text-gray-600">ID: {selectedAppointment.id}</p>
@@ -302,12 +355,22 @@ export default function AdminAppointments() {
                       <span className="font-medium">Status:</span>
                       <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedAppointment.status)}`}>
                         {getStatusIcon(selectedAppointment.status)}
-                        <span className="capitalize">{selectedAppointment.status === 'scheduled' ? 'Agendado' :
-                          selectedAppointment.status === 'in_progress' ? 'Em Progresso' :
-                          selectedAppointment.status === 'completed' ? 'Concluído' :
-                          selectedAppointment.status === 'canceled' ? 'Cancelado' :
-                          selectedAppointment.status}</span>
+                        <span className="capitalize">{statusLabels[selectedAppointment.status] || selectedAppointment.status}</span>
                       </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium">Confirmação:</span>
+                      {selectedAppointment.confirmed_at ? (
+                        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Confirmado em {new Date(selectedAppointment.confirmed_at).toLocaleString()}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <Clock className="w-4 h-4" />
+                          <span>Pendente</span>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -330,43 +393,90 @@ export default function AdminAppointments() {
                 </div>
               )}
 
-              {/* Status Update */}
-              <div className="mb-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-3">Atualizar Status</h4>
-                <div className="flex flex-wrap gap-2">
-                  {['scheduled', 'in_progress', 'completed', 'canceled'].map((status) => (
-                    <button key={status} onClick={() => handleUpdateStatus(selectedAppointment.id, status)} className={`px-4 py-2 rounded-xl font-medium transition-colors ${selectedAppointment.status === status ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
-                      {status === 'scheduled' ? 'Agendado' : status === 'in_progress' ? 'Em Progresso' : status === 'completed' ? 'Concluído' : status === 'canceled' ? 'Cancelado' : status}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Actions */}
+              <div className="border-t pt-6 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Side: Main Actions */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Ações Rápidas</h4>
+                    
+                    {/* Confirm Button */}
+                    {!selectedAppointment.confirmed_at && selectedAppointment.status !== 'canceled' && (
+                      <button 
+                        onClick={handleConfirm} 
+                        className="w-full px-4 py-3 rounded-xl font-medium transition-colors bg-green-600 text-white hover:bg-green-700 flex items-center justify-center space-x-2"
+                      >
+                        <Check className="w-5 h-5" />
+                        <span>Confirmar Agendamento</span>
+                      </button>
+                    )}
 
-              {/* Cancel + Reschedule */}
-              <div className="mb-6 border-t pt-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Cancelar Agendamento</h4>
-                    <button onClick={handleCancel} className="w-full px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">Cancelar Agendamento</button>
+                    {/* Status Update Buttons */}
+                    <div>
+                      <h5 className="text-md font-medium text-gray-800 mb-2">Alterar Status</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.keys(statusLabels).map((status) => (
+                          <button 
+                            key={status} 
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, status)} 
+                            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${selectedAppointment.status === status ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                          >
+                            {statusLabels[status]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Cancel Button */}
+                    {selectedAppointment.status !== 'canceled' && (
+                       <div>
+                         <h5 className="text-md font-medium text-gray-800 mb-2">Cancelar</h5>
+                         <button 
+                           onClick={handleCancel} 
+                           className="w-full px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-medium flex items-center justify-center space-x-2"
+                          >
+                           <XCircle className="w-5 h-5" />
+                           <span>Cancelar Agendamento</span>
+                         </button>
+                       </div>
+                    )}
                   </div>
 
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Reagendar</h4>
-                    <div className="flex gap-2 items-center">
-                      <input type="date" className="border rounded-xl px-3 py-2" onChange={(e) => { const iso = e.target.value; setRescheduleDate(iso); if (iso) loadAvailableSlots(iso); }} />
-                      <select className="border rounded-xl px-3 py-2" value={rescheduleTimeSlotId ?? ""} onChange={(e) => setRescheduleTimeSlotId(e.target.value ? Number(e.target.value) : null)}>
-                        <option value="">Selecione horário</option>
+                  {/* Right Side: Reschedule */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Reagendar</h4>
+                    <div className="space-y-3">
+                      <input 
+                        type="date" 
+                        className="w-full border rounded-xl px-3 py-2" 
+                        onChange={(e) => { 
+                          const iso = e.target.value; 
+                          setRescheduleDate(iso); 
+                          if (iso) loadAvailableSlots(iso); 
+                        }} 
+                      />
+                      <select 
+                        className="w-full border rounded-xl px-3 py-2" 
+                        value={rescheduleTimeSlotId ?? ""} 
+                        onChange={(e) => setRescheduleTimeSlotId(e.target.value ? Number(e.target.value) : null)}
+                      >
+                        <option value="">Selecione um novo horário</option>
                         {availableSlots.map(s => (
                           <option key={s.id} value={s.id}>{s.start_time}</option>
                         ))}
                       </select>
+                      <button 
+                        onClick={handleReschedule} 
+                        className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
+                      >
+                        Reagendar
+                      </button>
                     </div>
-                    <button onClick={handleReschedule} className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700">Reagendar</button>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-4">
+              <div className="mt-8 flex justify-end">
                 <button onClick={() => setShowModal(false)} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors">Fechar</button>
               </div>
             </div>

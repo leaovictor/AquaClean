@@ -38,6 +38,7 @@ export interface AdminAppointment {
   special_instructions?: string;
   total_price?: number;
   created_at: string;
+  confirmed_at: string | null;
 }
 
 // ------------------------------
@@ -125,6 +126,13 @@ export async function fetchAllAppointments(
   pageSize: number
 ): Promise<{ data: AdminAppointment[]; count: number }> {
   return invoke("admin-appointments", "POST", { page, pageSize });
+}
+
+// ------------------------------
+// CONFIRM APPOINTMENT
+// ------------------------------
+export async function confirmAppointment(id: number) {
+  return invoke("admin-confirm-appointment", "POST", { appointment_id: id });
 }
 
 // ------------------------------
