@@ -206,27 +206,20 @@ export default function AdminCustomers() {
   };
 
   const handleCreate = async () => {
-    console.log("handleCreate: Function started.");
     if (!newCustomer.email || !newCustomer.password) {
       showMessage("Email e Senha são obrigatórios para criar um novo cliente.", true);
-      console.log("handleCreate: Validation failed - email or password missing.");
       return;
     }
     try {
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
-      console.log("handleCreate: Supabase session obtained. Token present:", !!token);
-
       if (!token) {
         showMessage("Sessão expirada.", true);
         navigate("/sign-in");
-        console.log("handleCreate: No token found, redirecting to sign-in.");
         return;
       }
       
       const payload = { ...newCustomer, zip_code: newCustomer.cep };
-      console.log("handleCreate: Sending payload:", payload);
-      console.log("handleCreate: Request URL:", `${FUNCTIONS_URL}/admin-customers`);
 
       const response = await fetch(`${FUNCTIONS_URL}/admin-customers`, { // Rota corrigida
         method: 'POST',
@@ -237,9 +230,6 @@ export default function AdminCustomers() {
         body: JSON.stringify(payload),
       });
 
-      console.log("handleCreate: API Response status:", response.status);
-      console.log("handleCreate: API Response OK:", response.ok);
-
       if (response.ok) {
         setShowCreateModal(false);
         setNewCustomer({
@@ -248,15 +238,12 @@ export default function AdminCustomers() {
         });
         await fetchCustomers(); // Atualiza a lista
         showMessage("Cliente criado com sucesso!");
-        console.log("handleCreate: Customer created successfully.");
       } else {
         const errorData = await response.json();
         showMessage(errorData.error || "Falha ao criar cliente.", true);
-        console.error("handleCreate: API Error:", errorData);
       }
     } catch (error) {
       showMessage("Ocorreu um erro de rede ao criar o cliente.", true);
-      console.error("handleCreate: Network or unexpected error:", error);
     }
   };
 
