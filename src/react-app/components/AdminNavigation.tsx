@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, Settings, Bell, Clock } from "lucide-react";
+import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, User, Bell, Clock, Archive } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext";
 import { supabase } from "@/lib/supabaseClient"; // Caminho corrigido
@@ -23,7 +23,7 @@ export default function AdminNavigation() {
     { path: "/admin/dashboard", icon: BarChart3, label: "Painel" },
     { path: "/admin/appointments", icon: Calendar, label: "Agendamentos" },
     { path: "/admin/customers", icon: Users, label: "Clientes" },
-    { path: "/admin/assets", icon: Settings, label: "Ativos" },
+    { path: "/admin/assets", icon: Archive, label: "Ativos" },
     { path: "/admin/reports", icon: FileText, label: "Relatórios" },
   ];
 
@@ -87,7 +87,7 @@ export default function AdminNavigation() {
                   />
                 ) : (
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center">
-                    <Settings className="w-4 h-4 text-white" />
+                    <User className="w-4 h-4 text-white" />
                   </div>
                 )}
                 <span className="hidden sm:block font-medium text-gray-300">

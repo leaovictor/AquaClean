@@ -28,16 +28,20 @@ export interface AdminAppointment {
   id: number;
   user_email: string;
   customer_name: string;
+  phone: string;
+  whatsapp_number?: string;
+  phone_is_whatsapp: boolean;
   make: string;
   model: string;
   year: number;
+  plate?: string;
   service_type: 'basic' | 'premium' | 'deluxe';
-  status: 'scheduled' | 'in_progress' | 'completed' | 'canceled';
-  date: string;
-  time: string;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'canceled_by_admin' | 'canceled_by_customer' | 'confirmed' | 'checked_in' | 'ready_for_pickup' | 'no_show';
+  start_time: string;
   special_instructions?: string;
   total_price?: number;
   created_at: string;
+  confirmed_at: string | null;
 }
 
 // ------------------------------
@@ -122,9 +126,18 @@ export async function fetchRecentAppointments(limit = 5): Promise<RecentAppointm
 // ------------------------------
 export async function fetchAllAppointments(
   page: number,
-  pageSize: number
+  pageSize: number,
+  searchQuery?: string,
+  statusFilter?: string
 ): Promise<{ data: AdminAppointment[]; count: number }> {
-  return invoke("admin-appointments", "POST", { page, pageSize });
+  return invoke("admin-appointments", "POST", { page, pageSize, searchQuery, statusFilter });
+}
+
+// ------------------------------
+// CONFIRM APPOINTMENT
+// ------------------------------
+export async function confirmAppointment(id: number) {
+  return invoke("admin-confirm-appointment", "POST", { appointment_id: id });
 }
 
 // ------------------------------
@@ -139,6 +152,20 @@ export async function updateAppointmentStatus(id: number, status: string) {
 // ------------------------------
 export async function cancelAppointment(id: number) {
   return invoke("admin-appointments-cancel", "PUT", { id });
+}
+
+// ------------------------------
+// FETCH APPOINTMENT LOGS
+// ------------------------------
+export async function fetchAppointmentLogs(appointment_id: number) {
+  return invoke("admin-appointment-logs", "POST", { appointment_id });
+}
+
+// ------------------------------
+// FETCH AVAILABLE SLOTS
+// ------------------------------
+export async function fetchAvailableSlots(date: string) {
+  return invoke("get-available-slots", "POST", { date });
 }
 
 // ------------------------------

@@ -1,9 +1,7 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { supabase } from "../_shared/supabaseClient.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -30,15 +28,18 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (req.method !== "DELETE") {
-      return new Response("Method Not Allowed", { status: 405 });
+    if (req.method !== "PUT") {
+      return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
     }
 
     const { id } = await req.json();
 
-    const { data, error } = await supabase
+    // fetch previous
+    const { data: before } = await supabaseUserClient.from("appointments").select("status").eq("id", id).single();
+
+    const { data, error } = await supabaseUserClient
       .from("appointments")
-      .update({ status: "canceled" })
+      .update({ status: "canceled_by_admin", canceled_at: new Date().toISOString() })
       .eq("id", id)
       .select()
       .single();
@@ -49,6 +50,15 @@ serve(async (req) => {
         status: 400,
       });
     }
+
+    // insert log
+    await supabaseUserClient.from("appointment_logs").insert({
+      appointment_id: id,
+      action: "admin_cancellation",
+      previous_value: JSON.stringify({ status: before?.status ?? null }),
+      new_value: JSON.stringify({ status: "canceled_by_admin" }),
+      admin_id: user.id
+    });
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

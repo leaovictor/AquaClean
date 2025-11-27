@@ -1,11 +1,10 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -14,7 +13,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
+    );
 
     // Get the user from the token
     const { data: { user }, error: userError } = await userSupabaseClient.auth.getUser();
@@ -47,7 +46,8 @@ serve(async (req) => {
       
       const newVehicle = { 
         ...vehicleData, 
-        user_id: user.id
+        user_id: user.id,
+        plate: vehicleData.plate ? vehicleData.plate.toUpperCase() : vehicleData.plate // Convert plate to uppercase
       };
 
       const { data, error } = await supabaseAdmin
@@ -74,6 +74,6 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
-    })
+    });
   }
-})
+});
