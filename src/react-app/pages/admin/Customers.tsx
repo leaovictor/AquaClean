@@ -40,6 +40,29 @@ interface AdminCustomer {
 // URL base das suas Edge Functions (pode vir de uma variável de ambiente)
 const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
 
+// Função auxiliar para buscar endereço por CEP (ViaCEP)
+const fetchAddressByCep = async (cep: string) => {
+  if (cep.length !== 8 || !/^\d+$/.test(cep)) {
+    return null; // CEP inválido
+  }
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await response.json();
+    if (data.erro) {
+      return null; // CEP não encontrado
+    }
+    return {
+      address: data.logradouro,
+      city: data.localidade,
+      state: data.uf,
+      zip_code: data.cep.replace('-', ''), // Garante que o CEP retornado seja sem hífen
+    };
+  } catch (error) {
+    console.error("Erro ao buscar CEP:", error);
+    return null;
+  }
+};
+
 export default function AdminCustomers() {
   const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
@@ -60,7 +83,7 @@ export default function AdminCustomers() {
     address: '',
     city: '',
     state: '',
-    zip_code: '',
+    cep: '', // Alterado para cep
   });
 
   // --- Sistema de Feedback (Toast) ---
@@ -183,36 +206,57 @@ export default function AdminCustomers() {
   };
 
   const handleCreate = async () => {
+    console.log("handleCreate: Function started.");
+    if (!newCustomer.email || !newCustomer.password) {
+      showMessage("Email e Senha são obrigatórios para criar um novo cliente.", true);
+      console.log("handleCreate: Validation failed - email or password missing.");
+      return;
+    }
     try {
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
+      console.log("handleCreate: Supabase session obtained. Token present:", !!token);
+
       if (!token) {
         showMessage("Sessão expirada.", true);
+        navigate("/sign-in");
+        console.log("handleCreate: No token found, redirecting to sign-in.");
         return;
       }
+      
+      const payload = { ...newCustomer, zip_code: newCustomer.cep };
+      console.log("handleCreate: Sending payload:", payload);
+      console.log("handleCreate: Request URL:", `${FUNCTIONS_URL}/admin-customers`);
+
       const response = await fetch(`${FUNCTIONS_URL}/admin-customers`, { // Rota corrigida
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`, 
         },
-        body: JSON.stringify(newCustomer),
+        body: JSON.stringify(payload),
       });
+
+      console.log("handleCreate: API Response status:", response.status);
+      console.log("handleCreate: API Response OK:", response.ok);
 
       if (response.ok) {
         setShowCreateModal(false);
         setNewCustomer({
           email: '', password: '', first_name: '', last_name: '', 
-          phone: '', address: '', city: '', state: '', zip_code: '',
+          phone: '', address: '', city: '', state: '', cep: '',
         });
         await fetchCustomers(); // Atualiza a lista
         showMessage("Cliente criado com sucesso!");
+        console.log("handleCreate: Customer created successfully.");
       } else {
         const errorData = await response.json();
         showMessage(errorData.error || "Falha ao criar cliente.", true);
+        console.error("handleCreate: API Error:", errorData);
       }
     } catch (error) {
       showMessage("Ocorreu um erro de rede ao criar o cliente.", true);
+      console.error("handleCreate: Network or unexpected error:", error);
     }
   };
 
@@ -487,6 +531,33 @@ export default function AdminCustomers() {
                       />
                     </div>
                     <div>
+                      <label className="font-medium">CEP</label>
+                      <input
+                        type="text"
+                        value={editableCustomer.zip_code || ''}
+                        onChange={async (e) => {
+                          const cepValue = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                          setEditableCustomer({ ...editableCustomer, zip_code: cepValue });
+                          if (cepValue.length === 8) {
+                            const addressData = await fetchAddressByCep(cepValue);
+                            if (addressData) {
+                              setEditableCustomer(prev => ({
+                                ...prev!,
+                                address: addressData.address,
+                                city: addressData.city,
+                                state: addressData.state,
+                                zip_code: addressData.zip_code,
+                              }));
+                            } else {
+                                showMessage("CEP não encontrado ou inválido.", true);
+                            }
+                          }
+                        }}
+                        className="w-full mt-1 p-2 border rounded-md"
+                        maxLength={8}
+                      />
+                    </div>
+                    <div>
                       <label className="font-medium">Endereço</label>
                       <input
                         type="text"
@@ -510,15 +581,6 @@ export default function AdminCustomers() {
                         type="text"
                         value={editableCustomer.state || ''}
                         onChange={(e) => setEditableCustomer({ ...editableCustomer, state: e.target.value })}
-                        className="w-full mt-1 p-2 border rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-medium">CEP</label>
-                      <input
-                        type="text"
-                        value={editableCustomer.zip_code || ''}
-                        onChange={(e) => setEditableCustomer({ ...editableCustomer, zip_code: e.target.value })}
                         className="w-full mt-1 p-2 border rounded-md"
                       />
                     </div>
@@ -626,6 +688,33 @@ export default function AdminCustomers() {
                       />
                     </div>
                     <div>
+                      <label className="font-medium">CEP</label>
+                      <input
+                        type="text"
+                        value={newCustomer.cep}
+                        onChange={async (e) => {
+                          const cepValue = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                          setNewCustomer({ ...newCustomer, cep: cepValue });
+                          if (cepValue.length === 8) {
+                            const addressData = await fetchAddressByCep(cepValue);
+                            if (addressData) {
+                              setNewCustomer(prev => ({
+                                ...prev,
+                                address: addressData.address,
+                                city: addressData.city,
+                                state: addressData.state,
+                                cep: addressData.zip_code, // Keep formatted CEP
+                              }));
+                            } else {
+                                showMessage("CEP não encontrado ou inválido.", true);
+                            }
+                          }
+                        }}
+                        className="w-full mt-1 p-2 border rounded-md"
+                        maxLength={8}
+                      />
+                    </div>
+                    <div>
                       <label className="font-medium">Endereço</label>
                       <input
                         type="text"
@@ -649,15 +738,6 @@ export default function AdminCustomers() {
                         type="text"
                         value={newCustomer.state}
                         onChange={(e) => setNewCustomer({ ...newCustomer, state: e.target.value })}
-                        className="w-full mt-1 p-2 border rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-medium">CEP</label>
-                      <input
-                        type="text"
-                        value={newCustomer.zip_code}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, zip_code: e.target.value })}
                         className="w-full mt-1 p-2 border rounded-md"
                       />
                     </div>
@@ -687,3 +767,4 @@ export default function AdminCustomers() {
     </div>
   );
 }
+

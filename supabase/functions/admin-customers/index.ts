@@ -59,6 +59,7 @@ serve(async (req) => {
 
     switch (req.method) {
       case 'GET': {
+        console.log('AdminCustomers Edge Function: GET request received.');
         const { data: profiles, error: profilesError } = await supabase
             .from('profiles')
             .select(`
@@ -75,22 +76,29 @@ serve(async (req) => {
             `)
             .eq('role', 'customer')
 
-        if (profilesError) throw profilesError
+        if (profilesError) {
+          console.error('AdminCustomers Edge Function: Error fetching profiles:', profilesError);
+          throw profilesError;
+        }
 
         if (!profiles) {
+          console.log('AdminCustomers Edge Function: No customer profiles found.');
           return new Response(JSON.stringify([]), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
           });
         }
 
+        console.log(`AdminCustomers Edge Function: Found ${profiles.length} customer profiles.`);
+
         const formattedCustomers: AdminCustomerAPI[] = await Promise.all(profiles.map(async (customer) => {
+            console.log(`AdminCustomers Edge Function: Processing customer ID: ${customer.id}`);
             const { count: vehicleCount, error: vehicleError } = await supabase
                 .from('vehicles')
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', customer.id);
 
-            if (vehicleError) console.error(`Error fetching vehicle count for ${customer.id}:`, vehicleError);
+            if (vehicleError) console.error(`AdminCustomers Edge Function: Error fetching vehicle count for ${customer.id}:`, vehicleError);
 
             const { data: appointmentsData, error: appointmentError } = await supabase
                 .from('appointments')
@@ -100,7 +108,7 @@ serve(async (req) => {
                 `)
                 .eq('user_id', customer.id);
             
-            if (appointmentError) console.error(`Error fetching appointments for ${customer.id}:`, appointmentError);
+            if (appointmentError) console.error(`AdminCustomers Edge Function: Error fetching appointments for ${customer.id}:`, appointmentError);
             
             const appointments = appointmentsData || [];
             const appointment_count = appointments.length;
@@ -133,6 +141,7 @@ serve(async (req) => {
             }
         }))
 
+        console.log(`AdminCustomers Edge Function: Successfully formatted ${formattedCustomers.length} customers.`);
         return new Response(JSON.stringify(formattedCustomers), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
@@ -176,8 +185,11 @@ serve(async (req) => {
       }
 
       case 'POST': {
-        const body = await req.json()
+        console.log('AdminCustomers Edge Function: POST request received.');
+        const body = await req.json();
+        console.log('AdminCustomers Edge Function: Request body:', body);
 
+        console.log('AdminCustomers Edge Function: Attempting to create user with email:', body.email);
         const { data: userData, error: authError } = await supabase.auth.admin.createUser({
           email: body.email,
           password: body.password,
@@ -192,10 +204,14 @@ serve(async (req) => {
             zip_code: body.zip_code,
             role: 'customer',
           }
-        })
+        });
 
-        if (authError) throw authError
+        if (authError) {
+          console.error('AdminCustomers Edge Function: Error creating user:', authError);
+          throw authError;
+        }
         
+        console.log('AdminCustomers Edge Function: User created successfully:', userData.user?.id);
         return new Response(JSON.stringify({ 
             id: userData.user!.id,
             email: userData.user!.email,

@@ -12,16 +12,18 @@ import AdminCustomersPage from "@/react-app/pages/admin/Customers";
 import AdminPlansPage from "@/react-app/pages/admin/Plans";
 import AdminReportsPage from "@/react-app/pages/admin/Reports";
 import AdminTimeSlotManagerPage from "@/react-app/pages/admin/TimeSlotManager";
-import AdminAssetsPage from "@/react-app/pages/admin/Assets"; // Importar o novo componente
-import SignIn from "@/react-app/pages/SignIn"; // Import SignIn component
-import SignUp from "@/react-app/pages/SignUp"; // Import SignUp component
+import AdminAssetsPage from "@/react-app/pages/admin/Assets";
+import SignIn from "@/react-app/pages/SignIn";
+import SignUp from "@/react-app/pages/SignUp";
+import ForgotPassword from "@/react-app/pages/ForgotPassword"; // Import ForgotPassword component
+import UpdatePassword from "@/react-app/pages/UpdatePassword"; // Import UpdatePassword component
 import AdminProtectedRoute from "@/react-app/components/AdminProtectedRoute";
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
-    return <div>Carregando...</div>; // Or a spinner
+    return <div>Carregando...</div>;
   }
 
   if (!currentUser) {
@@ -38,8 +40,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/signin" element={<SignIn />} /> {/* Add SignIn route */}
-          <Route path="/signup" element={<SignUp />} /> {/* Add SignUp route */}
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} /> {/* Add ForgotPassword route */}
+          <Route path="/update-password" element={<UpdatePassword />} /> {/* Add UpdatePassword route */}
           <Route
             path="/dashboard"
             element={
