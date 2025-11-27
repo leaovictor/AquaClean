@@ -14,6 +14,7 @@ import {
   UserX,
   CalendarCheck,
   Calendar,
+  MessageSquareText,
 }
 from "lucide-react";
 import { useAuth } from "@/react-app/AuthContext";
@@ -80,13 +81,16 @@ export default function AdminAppointments() {
         id: apt.id,
         user_email: apt.profiles.email,
         customer_name: `${apt.profiles.first_name} ${apt.profiles.last_name}`,
+        phone: apt.profiles.phone,
+        whatsapp_number: apt.profiles.whatsapp_number,
+        phone_is_whatsapp: apt.profiles.phone_is_whatsapp,
         make: apt.vehicles.make,
         model: apt.vehicles.model,
         year: apt.vehicles.year,
+        plate: apt.vehicles.plate ? apt.vehicles.plate.toUpperCase() : undefined,
         service_type: apt.service_type,
         status: apt.status,
-        date: new Date(apt.start_time).toLocaleDateString('pt-BR'),
-        time: new Date(apt.start_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        start_time: apt.start_time, // Store ISO string directly
         special_instructions: apt.special_instructions,
         total_price: apt.total_price,
         created_at: apt.created_at,
@@ -138,6 +142,7 @@ export default function AdminAppointments() {
     try {
       const logs = await fetchAppointmentLogs(appointment.id);
       setAppointmentLogs(logs);
+      console.log('Fetched appointment logs in frontend:', logs);
     } catch (error) {
       console.error("Error fetching appointment logs:", error);
     }
@@ -366,8 +371,8 @@ export default function AdminAppointments() {
                         {appointment.total_price && <div className="text-sm text-gray-500">R$ {appointment.total_price}</div>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{new Date(appointment.date).toLocaleDateString()}</div>
-                        <div className="text-sm text-gray-500">{appointment.time}</div>
+                        <div className="text-sm font-medium text-gray-900">{new Date(appointment.start_time).toLocaleDateString('pt-BR')}</div>
+                        <div className="text-sm text-gray-500">{new Date(appointment.start_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
@@ -378,6 +383,16 @@ export default function AdminAppointments() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button onClick={() => { setSelectedAppointment(appointment); setShowModal(true); }} className="text-blue-600 hover:text-blue-900"><Eye className="w-4 h-4" /></button>
+                          {(appointment.whatsapp_number || (appointment.phone_is_whatsapp && appointment.phone)) && (
+                            <a 
+                              href={`https://wa.me/${appointment.phone_is_whatsapp ? appointment.phone : appointment.whatsapp_number}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-green-600 hover:text-green-800"
+                            >
+                              <MessageSquareText className="w-4 h-4" />
+                            </a>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -420,6 +435,20 @@ export default function AdminAppointments() {
                   <div className="space-y-2">
                     <p><span className="font-medium">Nome:</span> {selectedAppointment.customer_name || 'N/D'}</p>
                     <p><span className="font-medium">Email:</span> {selectedAppointment.user_email}</p>
+                    <p className="flex items-center space-x-2">
+                      <span className="font-medium">Telefone:</span>
+                      <span>{selectedAppointment.phone || 'N/D'}</span>
+                      {(selectedAppointment.whatsapp_number || (selectedAppointment.phone_is_whatsapp && selectedAppointment.phone)) && (
+                        <a 
+                          href={`https://wa.me/${selectedAppointment.phone_is_whatsapp ? selectedAppointment.phone : selectedAppointment.whatsapp_number}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <MessageSquareText className="w-4 h-4" />
+                        </a>
+                      )}
+                    </p>
                   </div>
                 </div>
 
@@ -427,6 +456,7 @@ export default function AdminAppointments() {
                   <h4 className="text-lg font-semibold text-gray-900 mb-3">Informações do Veículo</h4>
                   <div className="space-y-2">
                     <p><span className="font-medium">Veículo:</span> {selectedAppointment.year} {selectedAppointment.make} {selectedAppointment.model}</p>
+                    {selectedAppointment.plate && <p><span className="font-medium">Placa:</span> {selectedAppointment.plate}</p>}
                     <p><span className="font-medium">Serviço:</span> {selectedAppointment.service_type}</p>
                   </div>
                 </div>
@@ -434,8 +464,8 @@ export default function AdminAppointments() {
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-3">Detalhes do Agendamento</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Data:</span> {new Date(selectedAppointment.date).toLocaleDateString()}</p>
-                    <p><span className="font-medium">Hora:</span> {selectedAppointment.time}</p>
+                    <p><span className="font-medium">Data:</span> {new Date(selectedAppointment.start_time).toLocaleDateString('pt-BR')}</p>
+                    <p><span className="font-medium">Hora:</span> {new Date(selectedAppointment.start_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">Status:</span>
                       <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedAppointment.status)}`}>

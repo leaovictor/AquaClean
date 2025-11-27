@@ -34,7 +34,9 @@ export default function Profile() {
     address: "",
     city: "",
     state: "",
-    zip_code: ""
+    zip_code: "",
+    whatsapp_number: "",
+    phone_is_whatsapp: false,
   });
 
   useEffect(() => {
@@ -74,7 +76,9 @@ export default function Profile() {
           address: userData.address || "",
           city: userData.city || "",
           state: userData.state || "",
-          zip_code: userData.zip_code || ""
+          zip_code: userData.zip_code || "",
+          whatsapp_number: userData.whatsapp_number || "",
+          phone_is_whatsapp: userData.phone_is_whatsapp || false,
         });
       }
     } catch (error) {
@@ -260,6 +264,33 @@ export default function Profile() {
                 />
               </div>
 
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="phone_is_whatsapp"
+                  checked={profileForm.phone_is_whatsapp}
+                  onChange={(e) => setProfileForm({ ...profileForm, phone_is_whatsapp: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                />
+                <label htmlFor="phone_is_whatsapp" className="ml-2 text-sm text-gray-700">
+                  Meu telefone principal é também o meu WhatsApp
+                </label>
+              </div>
+
+              {!profileForm.phone_is_whatsapp && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    WhatsApp
+                  </label>
+                  <input
+                    type="tel"
+                    value={profileForm.whatsapp_number}
+                    onChange={(e) => setProfileForm({ ...profileForm, whatsapp_number: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Endereço
@@ -353,6 +384,15 @@ export default function Profile() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Telefone</p>
                   <p className="text-gray-900">{profile.phone || 'Não fornecido'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">WhatsApp</p>
+                  <p className="text-gray-900">
+                    {profile.phone_is_whatsapp 
+                      ? profile.phone 
+                      : profile.whatsapp_number || 'Não fornecido'
+                    }
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Endereço</p>

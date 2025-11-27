@@ -53,8 +53,8 @@ Deno.serve(async (req) => {
           start_time,
           total_price,
           special_instructions,
-          vehicles ( make, model, year ),
-          profiles ( first_name, last_name, email )
+          vehicles ( make, model, year, plate ),
+          profiles ( first_name, last_name, email, phone, whatsapp_number, phone_is_whatsapp )
         `,
           { count: "exact" }
         );

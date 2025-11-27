@@ -55,6 +55,8 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log('Fetched appointment logs:', logs);
+
     return new Response(JSON.stringify(logs), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
