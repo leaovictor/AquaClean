@@ -436,7 +436,7 @@ export default function Booking() {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <p className={`text-sm ${theme.subText}`}>Total Estimado</p>
-                <p className={`text-3xl font-bold ${theme.text}`}>R$ {calculateTotal().toFixed(2)}</p>
+                <p className={`text-xl md:text-3xl font-bold ${theme.text}`}>R$ {calculateTotal().toFixed(2)}</p>
               </div>
               <button type="submit" disabled={submitting} className={`px-8 py-3 rounded-xl font-bold transition-colors disabled:opacity-50 shadow-lg ${theme.buttonPrimary}`}>
                 {submitting ? 'Processando...' : 'Confirmar Agendamento'}

@@ -8,7 +8,8 @@ export default function AdminNavigation() {
   const { currentUser } = useAuth(); // Remove 'auth' from destructuring
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -75,7 +76,10 @@ export default function AdminNavigation() {
 
             <div className="relative">
               <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                onClick={() => {
+                  setIsUserMenuOpen(!isUserMenuOpen);
+                  setIsMobileMenuOpen(false);
+                }}
                 className="flex items-center space-x-2 p-2 rounded-xl hover:bg-gray-800 transition-all duration-200"
               >
                 {currentUser?.user_metadata?.avatar_url ? (
@@ -94,12 +98,12 @@ export default function AdminNavigation() {
                 </span>
               </button>
 
-              {isMenuOpen && (
+              {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-xl shadow-xl border border-gray-700 py-2 z-50">
                   <button
                     onClick={() => {
                       navigate("/");
-                      setIsMenuOpen(false);
+                      setIsUserMenuOpen(false);
                     }}
                     className="w-full flex items-center space-x-2 px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
                   >
@@ -110,7 +114,7 @@ export default function AdminNavigation() {
                   <button
                     onClick={() => {
                       handleLogout();
-                      setIsMenuOpen(false);
+                      setIsUserMenuOpen(false);
                     }}
                     className="w-full flex items-center space-x-2 px-4 py-2 text-red-400 hover:bg-gray-700 transition-colors"
                   >
@@ -124,7 +128,10 @@ export default function AdminNavigation() {
 
           {/* Mobile Menu Button */}
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            onClick={() => {
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+              setIsUserMenuOpen(false);
+            }}
             className="md:hidden p-2 rounded-xl hover:bg-gray-800 transition-all duration-200"
           >
             <div className="w-6 h-6 flex flex-col justify-center space-y-1">
@@ -136,7 +143,7 @@ export default function AdminNavigation() {
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
+        {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-800 py-4">
             <div className="space-y-2">
               {navItems.map(({ path, icon: Icon, label }) => (
@@ -144,7 +151,7 @@ export default function AdminNavigation() {
                   key={path}
                   onClick={() => {
                     navigate(path);
-                    setIsMenuOpen(false);
+                    setIsMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${location.pathname === path
                     ? "bg-gray-800 text-white"
@@ -155,6 +162,19 @@ export default function AdminNavigation() {
                   <span>{label}</span>
                 </button>
               ))}
+
+              <div className="border-t border-gray-800 my-2"></div>
+
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 text-red-400 hover:bg-gray-800"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Sair</span>
+              </button>
             </div>
           </div>
         )}

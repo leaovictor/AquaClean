@@ -2,13 +2,15 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Car, Calendar, User, CreditCard, LogOut, Bell } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext";
+import NotificationBell from "./NotificationBell";
 import { supabase } from "@/lib/supabaseClient"; // Import supabase client
 
 export default function Navigation() {
   const { currentUser } = useAuth(); // Remove 'auth' from destructuring
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -75,17 +77,15 @@ export default function Navigation() {
           </div>
 
           {/* User Menu */}
-          <div className="flex items-center space-x-3">
-            <button className={`relative p-2 rounded-xl transition-all duration-200 ${theme.buttonInactive}`}>
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                2
-              </span>
-            </button>
+          <div className="flex items-center space-x-4">
+            <NotificationBell />
 
             <div className="relative">
               <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                onClick={() => {
+                  setIsUserMenuOpen(!isUserMenuOpen);
+                  setIsMobileMenuOpen(false); // Close mobile menu if open
+                }}
                 className={`flex items-center space-x-2 p-2 rounded-xl transition-all duration-200 ${theme.buttonInactive}`}
               >
                 {currentUser?.photoURL ? (
@@ -104,12 +104,12 @@ export default function Navigation() {
                 </span>
               </button>
 
-              {isMenuOpen && (
+              {isUserMenuOpen && (
                 <div className={`absolute right-0 mt-2 w-48 ${theme.menuBg} rounded-xl shadow-xl border py-2 z-50`}>
                   <button
                     onClick={() => {
                       navigate("/profile");
-                      setIsMenuOpen(false);
+                      setIsUserMenuOpen(false);
                     }}
                     className={`w-full flex items-center space-x-2 px-4 py-2 transition-colors ${theme.menuItem}`}
                   >
@@ -122,7 +122,7 @@ export default function Navigation() {
                       <button
                         onClick={() => {
                           navigate("/admin");
-                          setIsMenuOpen(false);
+                          setIsUserMenuOpen(false);
                         }}
                         className="w-full flex items-center space-x-2 px-4 py-2 text-purple-600 hover:bg-purple-50 transition-colors"
                       >
@@ -135,7 +135,7 @@ export default function Navigation() {
                   <button
                     onClick={() => {
                       handleLogout();
-                      setIsMenuOpen(false);
+                      setIsUserMenuOpen(false);
                     }}
                     className="w-full flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
                   >
@@ -149,7 +149,10 @@ export default function Navigation() {
 
           {/* Mobile Menu Button */}
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            onClick={() => {
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+              setIsUserMenuOpen(false); // Close user menu if open
+            }}
             className={`md:hidden p-2 rounded-xl transition-all duration-200 ${theme.buttonInactive}`}
           >
             <div className="w-6 h-6 flex flex-col justify-center space-y-1">
@@ -161,7 +164,7 @@ export default function Navigation() {
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
+        {isMobileMenuOpen && (
           <div className={`md:hidden border-t py-4 ${isSubscriber ? 'border-slate-700' : 'border-blue-100'}`}>
             <div className="space-y-2">
               {navItems.map(({ path, icon: Icon, label }) => (
@@ -169,7 +172,7 @@ export default function Navigation() {
                   key={path}
                   onClick={() => {
                     navigate(path);
-                    setIsMenuOpen(false);
+                    setIsMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${location.pathname === path
                     ? theme.buttonActive
@@ -180,6 +183,19 @@ export default function Navigation() {
                   <span>{label}</span>
                 </button>
               ))}
+
+              <div className={`border-t my-2 ${isSubscriber ? 'border-slate-700' : 'border-gray-100'}`}></div>
+
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 text-red-600 hover:bg-red-50"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Sair</span>
+              </button>
             </div>
           </div>
         )}

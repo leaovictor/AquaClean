@@ -5,7 +5,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", { global: { headers: { Authorization: req.headers.get("Authorization")! } }});
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", { global: { headers: { Authorization: req.headers.get("Authorization")! } } });
 
     const { data: userData, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !userData.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 });
@@ -36,6 +36,50 @@ Deno.serve(async (req) => {
       new_value: JSON.stringify({ status }),
       admin_id: userData.user.id
     });
+
+    // Trigger Notification
+    const { data: appointmentData } = await supabaseClient
+      .from("appointments")
+      .select("profile_id, service_type, start_time")
+      .eq("id", id)
+      .single();
+
+    if (appointmentData?.profile_id) {
+      let title = "";
+      let message = "";
+
+      switch (status) {
+        case "confirmed":
+          title = "Agendamento Confirmado";
+          message = `Seu agendamento de ${appointmentData.service_type} foi confirmado para ${new Date(appointmentData.start_time).toLocaleDateString('pt-BR')}.`;
+          break;
+        case "in_progress":
+          title = "Lavagem Iniciada";
+          message = `Seu veículo começou a ser lavado. Avisaremos quando estiver pronto!`;
+          break;
+        case "ready_for_pickup":
+          title = "Pronto para Retirada";
+          message = `Seu veículo está pronto! Pode vir buscá-lo.`;
+          break;
+        case "completed":
+          title = "Serviço Finalizado";
+          message = `Obrigado por lavar conosco! Esperamos vê-lo novamente em breve.`;
+          break;
+        case "canceled_by_admin":
+          title = "Agendamento Cancelado";
+          message = `Seu agendamento foi cancelado pelo estabelecimento. Entre em contato para mais detalhes.`;
+          break;
+      }
+
+      if (title && message) {
+        await supabaseClient.from("notifications").insert({
+          user_id: appointmentData.profile_id,
+          title,
+          message,
+          type: "status_update"
+        });
+      }
+    }
 
     return new Response(JSON.stringify(updated), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (err) {
