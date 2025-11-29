@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import Stripe from "https://esm.sh/stripe@12.0.0?target=deno"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -37,7 +38,41 @@ serve(async (req) => {
             // If no body or invalid JSON, default to false (cancel)
         }
 
-        // Update profile to set auto_renew
+        // Get Stripe Customer ID
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('stripe_customer_id')
+            .eq('id', user.id)
+            .single()
+
+        if (!profile?.stripe_customer_id) {
+            throw new Error('Stripe customer not found')
+        }
+
+        const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+            apiVersion: '2022-11-15',
+            httpClient: Stripe.createFetchHttpClient(),
+        })
+
+        // List active subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+            customer: profile.stripe_customer_id,
+            status: 'active',
+            limit: 1,
+        })
+
+        if (subscriptions.data.length === 0) {
+            throw new Error('No active subscription found')
+        }
+
+        const subscriptionId = subscriptions.data[0].id
+
+        // Update Stripe Subscription
+        await stripe.subscriptions.update(subscriptionId, {
+            cancel_at_period_end: !autoRenew,
+        })
+
+        // Update profile to set auto_renew (local fallback, webhook should also handle this)
         const { error } = await supabaseClient
             .from('profiles')
             .update({ auto_renew: autoRenew })

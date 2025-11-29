@@ -16,7 +16,8 @@ import {
   AlertCircle,
   CheckCircle,
   MessageCircle,
-  Bell
+  Bell,
+  ChevronDown
 } from "lucide-react";
 import { useAuth } from "@/react-app/AuthContext";
 
@@ -90,10 +91,12 @@ export default function AdminCustomers() {
 
   // --- Notification System State ---
   const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [showBulkDropdown, setShowBulkDropdown] = useState(false); // New state for dropdown
   const [notificationData, setNotificationData] = useState({
     userId: '',
     title: '',
-    message: ''
+    message: '',
+    targetGroup: '' // 'active_subscribers', 'inactive_subscribers', 'non_subscribers', 'all'
   });
 
   // --- Sistema de Feedback (Toast) ---
@@ -304,13 +307,15 @@ export default function AdminCustomers() {
   // --- Renderização ---
   // --- Notification System ---
 
-  const handleOpenNotificationModal = (customer: AdminCustomer) => {
+  const handleOpenNotificationModal = (customer?: AdminCustomer, targetGroup?: string) => {
     setNotificationData({
-      userId: customer.id,
+      userId: customer?.id || '',
       title: '',
-      message: ''
+      message: '',
+      targetGroup: targetGroup || (customer ? '' : 'active_subscribers')
     });
     setShowNotificationModal(true);
+    setShowBulkDropdown(false); // Close dropdown if open
   };
 
   const handleSendNotification = async () => {
@@ -331,7 +336,8 @@ export default function AdminCustomers() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          user_id: notificationData.userId,
+          user_id: notificationData.userId || undefined,
+          target_group: notificationData.userId ? undefined : notificationData.targetGroup,
           title: notificationData.title,
           message: notificationData.message,
           type: 'system'
@@ -372,12 +378,59 @@ export default function AdminCustomers() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Clientes</h1>
             <p className="text-gray-600">Gerencie as contas dos clientes e visualize suas atividades.</p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-          >
-            Criar Cliente
-          </button>
+          <div className="flex space-x-3">
+            <div className="relative">
+              <button
+                onClick={() => setShowBulkDropdown(!showBulkDropdown)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center"
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                Notificação em Massa
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </button>
+
+              {showBulkDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowBulkDropdown(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 z-20 overflow-hidden">
+                    <button
+                      onClick={() => handleOpenNotificationModal(undefined, 'active_subscribers')}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-50"
+                    >
+                      Assinantes Ativos
+                    </button>
+                    <button
+                      onClick={() => handleOpenNotificationModal(undefined, 'inactive_subscribers')}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-50"
+                    >
+                      Assinantes Inativos
+                    </button>
+                    <button
+                      onClick={() => handleOpenNotificationModal(undefined, 'non_subscribers')}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-50"
+                    >
+                      Não Assinantes
+                    </button>
+                    <button
+                      onClick={() => handleOpenNotificationModal(undefined, 'all')}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700"
+                    >
+                      Todos os Clientes
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              Criar Cliente
+            </button>
+          </div>
         </div>
 
         {/* Estatísticas */}
@@ -679,6 +732,72 @@ export default function AdminCustomers() {
           </div>
         )}
 
+        {/* Modal de Notificação */}
+        {showNotificationModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-2xl bg-white">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  {notificationData.userId ? 'Enviar Notificação Individual' : 'Enviar Notificação em Massa'}
+                </h3>
+                {notificationData.userId && (
+                  <p className="text-gray-600">Para: {customers.find(c => c.id === notificationData.userId)?.email}</p>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {!notificationData.userId && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Público Alvo</label>
+                    <div className="w-full p-2 border rounded-xl bg-gray-50 text-gray-600">
+                      {notificationData.targetGroup === 'active_subscribers' && 'Assinantes Ativos'}
+                      {notificationData.targetGroup === 'inactive_subscribers' && 'Assinantes Inativos / Cancelados'}
+                      {notificationData.targetGroup === 'non_subscribers' && 'Não Assinantes'}
+                      {notificationData.targetGroup === 'all' && 'Todos os Clientes'}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                  <input
+                    type="text"
+                    value={notificationData.title}
+                    onChange={(e) => setNotificationData({ ...notificationData, title: e.target.value })}
+                    className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Ex: Promoção Especial"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mensagem</label>
+                  <textarea
+                    value={notificationData.message}
+                    onChange={(e) => setNotificationData({ ...notificationData, message: e.target.value })}
+                    className="w-full p-2 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent h-32 resize-none"
+                    placeholder="Digite sua mensagem aqui..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => setShowNotificationModal(false)}
+                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSendNotification}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+                >
+                  Enviar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modal de Criação (CREATE) */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -823,55 +942,7 @@ export default function AdminCustomers() {
           </div>
         )}
 
-        {/* Modal de Notificação */}
-        {showNotificationModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-2xl bg-white">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Enviar Notificação
-                </h3>
-              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="font-medium text-gray-700">Título</label>
-                  <input
-                    type="text"
-                    value={notificationData.title}
-                    onChange={(e) => setNotificationData({ ...notificationData, title: e.target.value })}
-                    className="w-full mt-1 p-2 border rounded-md"
-                    placeholder="Ex: Promoção Especial"
-                  />
-                </div>
-                <div>
-                  <label className="font-medium text-gray-700">Mensagem</label>
-                  <textarea
-                    value={notificationData.message}
-                    onChange={(e) => setNotificationData({ ...notificationData, message: e.target.value })}
-                    className="w-full mt-1 p-2 border rounded-md h-32"
-                    placeholder="Digite sua mensagem aqui..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-4 mt-6">
-                <button
-                  onClick={() => setShowNotificationModal(false)}
-                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSendNotification}
-                  className="px-6 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
-                >
-                  Enviar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
       </div>
     </div>

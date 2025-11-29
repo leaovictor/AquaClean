@@ -126,6 +126,36 @@ serve(async (req) => {
                 }
                 break
             }
+            case 'customer.subscription.updated': {
+                const subscription = event.data.object
+                const customerId = subscription.customer
+                const cancelAtPeriodEnd = subscription.cancel_at_period_end
+
+                const { data: profile } = await supabaseClient
+                    .from('profiles')
+                    .select('id')
+                    .eq('stripe_customer_id', customerId)
+                    .single()
+
+                if (profile) {
+                    const { error } = await supabaseClient
+                        .from('profiles')
+                        .update({
+                            auto_renew: !cancelAtPeriodEnd
+                        })
+                        .eq('id', profile.id)
+
+                    if (error) {
+                        action = 'error'
+                        details = error.message
+                    } else {
+                        action = 'subscription_updated'
+                    }
+                } else {
+                    details = 'user_not_found'
+                }
+                break
+            }
         }
 
         return new Response(JSON.stringify({ received: true, action, details }), {

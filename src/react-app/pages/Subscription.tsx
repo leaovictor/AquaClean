@@ -17,6 +17,7 @@ export default function Subscription() {
   const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [loadingPlanId, setLoadingPlanId] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -77,35 +78,80 @@ export default function Subscription() {
   };
 
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
-    if (!session) return;
-    setProcessing(true);
-    setMessage({ type: 'success', text: `Iniciando checkout para o plano ${plan.name}...` });
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
+
+    if (!session) {
+      setMessage({ type: 'error', text: 'Sessão de usuário não encontrada. Por favor, faça login novamente.' });
+      return;
+    }
+
+    setLoadingPlanId(plan.id);
+    setMessage(null); // Clear previous messages
 
     try {
-      const response = await fetch(`${functionsBaseUrl}/create-checkout-session`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ plan_id: plan.id }),
-      });
+      // Check if user already has an active subscription
+      // Cast profile to any to avoid TS errors if types are not updated yet
+      const profile = currentUser.profile as any;
 
-      if (response.ok) {
-        const { url } = await response.json();
-        if (url) {
-          window.location.href = url;
+      if (profile?.subscription_status === 'active') {
+        // If selecting the same plan, do nothing or show message
+        if (profile.subscription_plan_id === plan.id) {
+          setMessage({ type: 'success', text: 'Você já assina este plano.' }); // Changed to success/info
+          setLoadingPlanId(null);
+          return;
+        }
+
+        // Call update-subscription for upgrade/downgrade
+        const response = await fetch(`${functionsBaseUrl}/update-subscription`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ plan_id: plan.id }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao atualizar assinatura');
+        }
+
+        setMessage({ type: 'success', text: 'Plano atualizado com sucesso!' });
+        // Refresh data to update currentSubscription and currentUser.profile
+        await fetchData();
+
+      } else {
+        // New subscription (Checkout)
+        const response = await fetch(`${functionsBaseUrl}/create-checkout-session`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ plan_id: plan.id }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao iniciar checkout');
+        }
+
+        if (data.url) {
+          window.location.href = data.url;
         } else {
           throw new Error('URL de checkout não encontrada.');
         }
-      } else {
-        const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Falha ao iniciar checkout.' });
-        setProcessing(false);
       }
-    } catch (error) {
-      console.error("Error initiating checkout:", error);
-      setMessage({ type: 'error', text: 'Erro de conexão.' });
+    } catch (error: any) {
+      console.error('Error:', error);
+      setMessage({ type: 'error', text: error.message || 'Erro ao processar solicitação.' });
+    } finally {
+      setLoadingPlanId(null);
       setProcessing(false);
     }
   };
@@ -256,7 +302,6 @@ export default function Subscription() {
         <div className="grid lg:grid-cols-3 gap-8">
           {plans.map((plan, index) => {
             const isPopular = index === 1 || plans.length === 1;
-            const isCurrentPlan = currentSubscription?.plan_id === plan.id;
 
             return (
               <div
@@ -304,16 +349,20 @@ export default function Subscription() {
 
                   <button
                     onClick={() => handleSelectPlan(plan)}
-                    disabled={isCurrentPlan || processing}
-                    className={`w-full py-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center ${isPopular
-                      ? `${theme.buttonPrimary} shadow-lg hover:shadow-xl`
-                      : `${theme.buttonSecondary}`
-                      } ${isCurrentPlan || processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={processing || (currentUser?.profile?.subscription_status === 'active' && currentUser?.profile?.subscription_plan_id === plan.id)}
+                    className={`w-full py-3 px-6 rounded-xl font-bold transition-all duration-200 flex items-center justify-center ${plan.recommended
+                      ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-900 shadow-lg hover:shadow-xl'
+                      : 'bg-white text-slate-900 hover:bg-gray-50 border-2 border-slate-200'
+                      } ${processing ? 'opacity-75 cursor-wait' : ''} ${currentUser?.profile?.subscription_status === 'active' && currentUser?.profile?.subscription_plan_id === plan.id ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                   >
-                    {processing && !isCurrentPlan ? (
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : null}
-                    {isCurrentPlan ? "Plano Atual" : processing ? "Processando..." : "Selecionar Plano"}
+                    {processing ? (
+                      <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      currentUser?.profile?.subscription_status === 'active'
+                        ? (currentUser?.profile?.subscription_plan_id === plan.id ? 'Seu Plano Atual' : 'Mudar para este Plano')
+                        : 'Assinar Agora'
+                    )}
                   </button>
                 </div>
               </div>

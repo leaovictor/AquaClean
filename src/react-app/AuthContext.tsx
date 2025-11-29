@@ -2,14 +2,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient'; // Caminho corrigido
 import type { Session, User } from '@supabase/supabase-js';
-
-interface Profile {
-  role?: string;
-  subscription_status?: string;
-}
+import type { UserProfile } from '@/shared/types';
 
 export interface CurrentUser extends User {
-  profile?: Profile;
+  profile?: UserProfile;
 }
 
 interface AuthContextType {
@@ -41,7 +37,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
             .eq('id', session.user.id)
             .single();
 
-          setCurrentUser({ ...session.user, profile });
+          setCurrentUser({ ...session.user, profile: profile || undefined });
         } else {
           console.log("AuthContext: No user in session");
           setCurrentUser(null);
@@ -65,11 +61,11 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (session?.user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role, subscription_status')
+            .select('id, role, subscription_status')
             .eq('id', session.user.id)
             .single();
 
-          setCurrentUser({ ...session.user, profile });
+          setCurrentUser({ ...session.user, profile: profile || undefined });
         } else {
           setCurrentUser(null);
         }
