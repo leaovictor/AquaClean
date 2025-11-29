@@ -79,10 +79,10 @@ export default function Subscription() {
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
     if (!session) return;
     setProcessing(true);
-    setMessage({ type: 'success', text: `Processando assinatura do plano ${plan.name}...` });
+    setMessage({ type: 'success', text: `Iniciando checkout para o plano ${plan.name}...` });
 
     try {
-      const response = await fetch(`${functionsBaseUrl}/subscribe`, {
+      const response = await fetch(`${functionsBaseUrl}/create-checkout-session`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,15 +92,19 @@ export default function Subscription() {
       });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Assinatura realizada com sucesso! Redirecionando...' });
-        setTimeout(() => navigate("/dashboard"), 2000);
+        const { url } = await response.json();
+        if (url) {
+          window.location.href = url;
+        } else {
+          throw new Error('URL de checkout não encontrada.');
+        }
       } else {
         const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Falha ao assinar plano.' });
+        setMessage({ type: 'error', text: errorData.error || 'Falha ao iniciar checkout.' });
         setProcessing(false);
       }
     } catch (error) {
-      console.error("Error subscribing:", error);
+      console.error("Error initiating checkout:", error);
       setMessage({ type: 'error', text: 'Erro de conexão.' });
       setProcessing(false);
     }

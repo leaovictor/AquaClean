@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
 import { Calendar, Car, Clock, Plus, ChevronRight, Trash2, CheckCircle, AlertCircle, UserX, Bell, MapPin, CalendarCheck, XCircle, Crown, Sparkles } from "lucide-react";
@@ -47,6 +47,7 @@ export default function Dashboard() {
 
   const { currentUser, session, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [appointments, setAppointments] = useState<EnrichedAppointment[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [profile, setProfile] = useState<Partial<UserProfile>>({});
@@ -65,6 +66,20 @@ export default function Dashboard() {
       fetchDashboardData();
     }
   }, [currentUser, loading, navigate]);
+
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
+      setToastMessage({ type: 'success', text: 'Pagamento processado! Atualizando sua assinatura...' });
+      // Remove session_id from URL without reloading
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('session_id');
+      setSearchParams(newParams);
+
+      // Re-fetch data after a short delay to allow webhook to process
+      setTimeout(() => fetchDashboardData(), 2000);
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!currentUser) return;
