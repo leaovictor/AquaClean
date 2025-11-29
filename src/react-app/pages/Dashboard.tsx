@@ -14,19 +14,19 @@ interface EnrichedAppointment extends Appointment {
   timeSlot?: TimeSlot;
 }
 
-const getStatusIcon = (status: string) => {
+const getStatusIcon = (status: string, sizeClass: string = "w-4 h-4") => {
   switch (status) {
-    case "completed": return <CheckCircle className="w-4 h-4 text-green-500" />;
-    case "in_progress": return <Car className="w-4 h-4 text-blue-500 animate-pulse" />;
-    case "ready_for_pickup": return <Bell className="w-4 h-4 text-purple-500" />;
-    case "checked_in": return <MapPin className="w-4 h-4 text-cyan-500" />;
-    case "confirmed": return <CalendarCheck className="w-4 h-4 text-blue-500" />;
-    case "scheduled": return <Clock className="w-4 h-4 text-gray-400" />;
+    case "completed": return <CheckCircle className={`${sizeClass} text-green-500`} />;
+    case "in_progress": return <Car className={`${sizeClass} text-blue-500 animate-pulse`} />;
+    case "ready_for_pickup": return <Bell className={`${sizeClass} text-purple-500`} />;
+    case "checked_in": return <MapPin className={`${sizeClass} text-cyan-500`} />;
+    case "confirmed": return <CalendarCheck className={`${sizeClass} text-blue-500`} />;
+    case "scheduled": return <Clock className={`${sizeClass} text-gray-400`} />;
     case "canceled":
     case "canceled_by_admin":
-    case "canceled_by_customer": return <XCircle className="w-4 h-4 text-red-500" />;
-    case "no_show": return <UserX className="w-4 h-4 text-gray-400" />;
-    default: return <Calendar className="w-4 h-4 text-gray-400" />;
+    case "canceled_by_customer": return <XCircle className={`${sizeClass} text-red-500`} />;
+    case "no_show": return <UserX className={`${sizeClass} text-gray-400`} />;
+    default: return <Calendar className={`${sizeClass} text-gray-400`} />;
   }
 };
 
@@ -348,8 +348,8 @@ export default function Dashboard() {
                 {activeAppointments.map((appointment) => (
                   <div key={appointment.id} className="border-b last:border-0 pb-8 last:pb-0 border-gray-200 dark:border-gray-700">
 
-                    {/* Status Tracker - Desktop */}
-                    <div className="hidden lg:flex justify-between items-center text-xs text-center mb-8">
+                    {/* Status Tracker - Responsive */}
+                    <div className="flex justify-between items-center text-[10px] lg:text-xs text-center mb-8">
                       {statusFlow.map((status, index, arr) => {
                         const statusIndex = arr.indexOf(appointment.status === 'pending_payment' ? 'scheduled' : appointment.status);
                         const isActive = index === statusIndex;
@@ -360,7 +360,7 @@ export default function Dashboard() {
 
                         return (
                           <div key={status} className="flex-1 relative">
-                            <div className={`z-10 relative mx-auto w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isPending
+                            <div className={`z-10 relative mx-auto w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isPending
                               ? 'bg-yellow-100 text-yellow-600 border-2 border-yellow-400 animate-pulse'
                               : isActive
                                 ? (isSubscriber ? 'bg-yellow-500 text-slate-900 shadow-lg shadow-yellow-500/50' : 'bg-blue-600 text-white shadow-lg')
@@ -368,9 +368,9 @@ export default function Dashboard() {
                                   ? 'bg-green-500 text-white'
                                   : (isSubscriber ? 'bg-slate-700 text-slate-500' : 'bg-gray-200 text-gray-500')
                               }`}>
-                              {isCompleted ? <CheckCircle className="w-6 h-6" /> : getStatusIcon(status)}
+                              {isCompleted ? <CheckCircle className="w-4 h-4 lg:w-6 lg:h-6" /> : getStatusIcon(status, "w-4 h-4 lg:w-6 lg:h-6")}
                             </div>
-                            <p className={`mt-2 font-medium ${isPending
+                            <p className={`mt-1 lg:mt-2 font-medium leading-tight ${isPending
                               ? 'text-yellow-600'
                               : isActive
                                 ? (isSubscriber ? 'text-yellow-400' : 'text-blue-600')
@@ -379,7 +379,7 @@ export default function Dashboard() {
                               {isPending ? 'Pagamento Pendente' : statusLabels[status as keyof typeof statusLabels]}
                             </p>
                             {index < arr.length - 1 && (
-                              <div className={`absolute top-5 left-1/2 w-full h-0.5 ${isCompleted ? 'bg-green-500' : (isSubscriber ? 'bg-slate-700' : 'bg-gray-200')}`}></div>
+                              <div className={`absolute top-4 lg:top-5 left-1/2 w-full h-0.5 ${isCompleted ? 'bg-green-500' : (isSubscriber ? 'bg-slate-700' : 'bg-gray-200')}`}></div>
                             )}
                           </div>
                         );
