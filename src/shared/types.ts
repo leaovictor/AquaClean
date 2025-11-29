@@ -38,6 +38,8 @@ export interface Appointment {
     model: string;
     plate: string;
   };
+
+  products?: any[];
 }
 
 export interface Service {
@@ -66,10 +68,12 @@ export interface SubscriptionPlan {
   washes_per_month: number;
   features: string[];
   is_active: boolean;
+  recommended?: boolean;
 }
 
 export interface UserProfile {
   id: string;
+  role?: string;
   first_name?: string;
   last_name?: string;
   phone?: string;

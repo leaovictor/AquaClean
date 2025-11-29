@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Car, Calendar, User, CreditCard, LogOut, Bell } from "lucide-react";
+import { Car, Calendar, User, CreditCard, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext";
 import NotificationBell from "./NotificationBell";
@@ -60,7 +60,7 @@ export default function Navigation() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden lg:flex items-center space-x-1">
             {navItems.map(({ path, icon: Icon, label }) => (
               <button
                 key={path}
@@ -88,9 +88,9 @@ export default function Navigation() {
                 }}
                 className={`flex items-center space-x-2 p-2 rounded-xl transition-all duration-200 ${theme.buttonInactive}`}
               >
-                {currentUser?.photoURL ? (
+                {currentUser?.user_metadata?.avatar_url ? (
                   <img
-                    src={currentUser.photoURL}
+                    src={currentUser.user_metadata.avatar_url}
                     alt="Profile"
                     className="w-8 h-8 rounded-full border-2 border-transparent hover:border-current transition-colors"
                   />
@@ -100,7 +100,7 @@ export default function Navigation() {
                   </div>
                 )}
                 <span className={`hidden sm:block font-medium ${theme.text}`}>
-                  {currentUser?.displayName || currentUser?.email}
+                  {currentUser?.user_metadata?.full_name || currentUser?.email}
                 </span>
               </button>
 
@@ -153,7 +153,7 @@ export default function Navigation() {
               setIsMobileMenuOpen(!isMobileMenuOpen);
               setIsUserMenuOpen(false); // Close user menu if open
             }}
-            className={`md:hidden p-2 rounded-xl transition-all duration-200 ${theme.buttonInactive}`}
+            className={`lg:hidden p-2 rounded-xl transition-all duration-200 ${theme.buttonInactive}`}
           >
             <div className="w-6 h-6 flex flex-col justify-center space-y-1">
               <div className={`w-full h-0.5 rounded ${isSubscriber ? 'bg-gray-300' : 'bg-gray-600'}`}></div>
@@ -165,7 +165,7 @@ export default function Navigation() {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className={`md:hidden border-t py-4 ${isSubscriber ? 'border-slate-700' : 'border-blue-100'}`}>
+          <div className={`lg:hidden border-t py-4 ${isSubscriber ? 'border-slate-700' : 'border-blue-100'}`}>
             <div className="space-y-2">
               {navItems.map(({ path, icon: Icon, label }) => (
                 <button

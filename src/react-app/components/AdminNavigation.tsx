@@ -49,7 +49,7 @@ export default function AdminNavigation() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden lg:flex items-center space-x-1">
             {navItems.map(({ path, icon: Icon, label }) => (
               <button
                 key={path}
@@ -132,7 +132,7 @@ export default function AdminNavigation() {
               setIsMobileMenuOpen(!isMobileMenuOpen);
               setIsUserMenuOpen(false);
             }}
-            className="md:hidden p-2 rounded-xl hover:bg-gray-800 transition-all duration-200"
+            className="lg:hidden p-2 rounded-xl hover:bg-gray-800 transition-all duration-200"
           >
             <div className="w-6 h-6 flex flex-col justify-center space-y-1">
               <div className="w-full h-0.5 bg-gray-300 rounded"></div>
@@ -144,7 +144,7 @@ export default function AdminNavigation() {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-800 py-4">
+          <div className="lg:hidden border-t border-gray-800 py-4">
             <div className="space-y-2">
               {navItems.map(({ path, icon: Icon, label }) => (
                 <button

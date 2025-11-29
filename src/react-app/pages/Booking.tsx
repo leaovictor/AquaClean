@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState, useCallback } from "react";
 import Navigation from "@/react-app/components/Navigation";
-import { Calendar, Car, Clock, CheckCircle, AlertCircle, Loader2, Package, Info } from "lucide-react";
-import type { Vehicle, TimeSlot, Appointment, Service, Product } from "@/shared/types";
+import { Car, Clock, CheckCircle, AlertCircle, Loader2, Package } from "lucide-react";
+import type { Vehicle, TimeSlot, Service, Product } from "@/shared/types";
 import { useAuth } from "@/react-app/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -29,7 +29,6 @@ export default function Booking() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]); // ISO strings of booked start times
 
   // Selection States
@@ -37,7 +36,7 @@ export default function Booking() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null);
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
-  const [specialInstructions, setSpecialInstructions] = useState("");
+  const [specialInstructions] = useState("");
 
   // UI States
   const [dataLoading, setDataLoading] = useState(true);
@@ -121,7 +120,7 @@ export default function Booking() {
 
       const vehiclesData = await processResponse(vehiclesRes, 'vehicles');
       const timeSlotsData = await processResponse(timeSlotsRes, 'time slots');
-      const appointmentsData = await processResponse(appointmentsRes, 'appointments');
+      await processResponse(appointmentsRes, 'appointments');
 
       if (vehiclesData) {
         setVehicles(vehiclesData);
@@ -139,7 +138,7 @@ export default function Booking() {
         setTimeSlots(filteredTimeSlots);
       }
 
-      if (appointmentsData) setAppointments(appointmentsData);
+
 
       // 4. Fetch Booked Slots (Public Availability) via RPC
       // Fetch for next 30 days
@@ -175,8 +174,17 @@ export default function Booking() {
     }
     if (currentUser && session) {
       fetchData();
+
+      // Check for payment success
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('payment_success')) {
+        displayMessage({ type: 'success', text: 'Pagamento realizado com sucesso! Seu agendamento foi confirmado.' });
+        // Clean up URL
+        window.history.replaceState({}, '', '/booking');
+        setTimeout(() => navigate("/dashboard"), 3000);
+      }
     }
-  }, [currentUser, session, loading, navigate, fetchData]);
+  }, [currentUser, session, loading, navigate, fetchData, displayMessage]);
 
   // --- Logic Helpers ---
 
@@ -189,7 +197,6 @@ export default function Booking() {
     // We need to compare the slot's intended start time (as ISO) with the booked slots.
 
     const slotDate = new Date(`${date}T${time}:00`);
-    const slotISO = slotDate.toISOString();
 
     // Check if any booked slot matches this time
     // Note: This exact match might be tricky with seconds/milliseconds. 
@@ -205,7 +212,12 @@ export default function Booking() {
 
   const calculateTotal = () => {
     const service = services.find(s => s.id === selectedService);
-    const servicePrice = (isSubscriber && service) ? 0 : (service?.price || 0);
+    const vehicle = vehicles.find(v => v.id === selectedVehicle);
+
+    // Free wash only applies if user is subscriber AND selected vehicle is default
+    const isFreeWash = isSubscriber && vehicle?.is_default;
+
+    const servicePrice = (isFreeWash && service) ? 0 : (service?.price || 0);
 
     const productsPrice = selectedProducts.reduce((total, pId) => {
       const product = products.find(p => p.id === pId);
@@ -257,6 +269,14 @@ export default function Booking() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+
+        if (data.checkoutUrl) {
+          // Redirect to Stripe
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+
         displayMessage({ type: 'success', text: 'Agendamento realizado!' });
         setTimeout(() => navigate("/dashboard"), 2000);
       } else {
@@ -357,7 +377,7 @@ export default function Booking() {
                     <p className={`text-xs mt-1 ${theme.iconPrimary}`}>{s.duration_minutes} min</p>
                   </div>
                   <div className="text-right">
-                    {isSubscriber ? (
+                    {isSubscriber && vehicles.find(v => v.id === selectedVehicle)?.is_default ? (
                       <div>
                         <span className="text-gray-500 line-through text-sm">R$ {s.price}</span>
                         <span className="block text-green-500 font-bold">Grátis</span>
