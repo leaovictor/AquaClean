@@ -37,9 +37,30 @@ serve(async (req) => {
         switch (event.type) {
             case 'checkout.session.completed': {
                 const session = event.data.object
-                const { plan_id, user_id } = session.metadata || {}
+                const { plan_id, user_id, type } = session.metadata || {}
+                const appointment_id = session.client_reference_id || session.metadata?.appointment_id
 
-                if (plan_id && user_id) {
+                console.log('Webhook Session Metadata:', JSON.stringify(session.metadata));
+                console.log('Client Reference ID:', session.client_reference_id);
+
+                if ((type === 'appointment_payment' || appointment_id) && appointment_id) {
+                    console.log(`Processing appointment payment for ID: ${appointment_id}`);
+                    // Handle appointment payment
+                    const { error } = await supabaseClient
+                        .from('appointments')
+                        .update({ status: 'scheduled' }) // or 'confirmed'
+                        .eq('id', appointment_id)
+
+                    if (error) {
+                        console.error(`Error updating appointment ${appointment_id}:`, error);
+                        action = 'error'
+                        details = error.message
+                    } else {
+                        console.log(`Successfully updated appointment ${appointment_id} to scheduled`);
+                        action = 'appointment_confirmed'
+                    }
+
+                } else if (plan_id && user_id) {
                     // Update user profile with subscription details
                     const { error } = await supabaseClient
                         .from('profiles')

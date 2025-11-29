@@ -38,6 +38,8 @@ export interface Appointment {
     model: string;
     plate: string;
   };
+
+  products?: any[];
 }
 
 export interface Service {

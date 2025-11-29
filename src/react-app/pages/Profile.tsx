@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import Navigation from "@/react-app/components/Navigation";
-import { Car, Plus, Edit2, CheckCircle, AlertCircle, User } from "lucide-react";
+import { Car, Plus, Edit2, CheckCircle, AlertCircle, User, Trash2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 import type { Vehicle, UserProfile } from "@/shared/types";
 import { useAuth } from "@/react-app/AuthContext";
 
@@ -116,6 +117,26 @@ export default function Profile() {
     } catch (error) {
       console.error("Error updating profile:", error);
       setMessage({ type: 'error', text: 'Falha ao atualizar perfil' });
+    }
+  };
+
+  const handleDeleteVehicle = async (vehicleId: number) => {
+    if (!session) return;
+    if (!confirm("Tem certeza que deseja excluir este veículo?")) return;
+
+    try {
+      const { error } = await supabase
+        .from('vehicles')
+        .delete()
+        .eq('id', vehicleId);
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Veículo excluído com sucesso!' });
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting vehicle:", error);
+      setMessage({ type: 'error', text: 'Falha ao excluir veículo' });
     }
   };
 
@@ -567,11 +588,20 @@ export default function Profile() {
                         )}
                       </div>
                     </div>
-                    {vehicle.is_default && (
-                      <span className={`text-xs px-2 py-1 rounded-full ${isSubscriber ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-100 text-green-800'}`}>
-                        Padrão
-                      </span>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {vehicle.is_default && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${isSubscriber ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-100 text-green-800'}`}>
+                          Padrão
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleDeleteVehicle(vehicle.id)}
+                        className={`p-2 rounded-lg transition-colors ${isSubscriber ? 'hover:bg-red-500/20 text-red-400' : 'hover:bg-red-100 text-red-600'}`}
+                        title="Excluir veículo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   {vehicle.plate && (
                     <p className={`text-sm mb-3 ${theme.subText}`}>

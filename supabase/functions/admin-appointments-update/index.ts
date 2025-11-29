@@ -40,11 +40,11 @@ Deno.serve(async (req) => {
     // Trigger Notification
     const { data: appointmentData } = await supabaseClient
       .from("appointments")
-      .select("profile_id, service_type, start_time")
+      .select("user_id, service_type, start_time")
       .eq("id", id)
       .single();
 
-    if (appointmentData?.profile_id) {
+    if (appointmentData?.user_id) {
       let title = "";
       let message = "";
 
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 
       if (title && message) {
         await supabaseClient.from("notifications").insert({
-          user_id: appointmentData.profile_id,
+          user_id: appointmentData.user_id,
           title,
           message,
           type: "status_update"
