@@ -15,7 +15,8 @@ import {
   MapPin,
   AlertCircle,
   CheckCircle,
-  MessageCircle
+  MessageCircle,
+  Bell
 } from "lucide-react";
 import { useAuth } from "@/react-app/AuthContext";
 
@@ -85,6 +86,14 @@ export default function AdminCustomers() {
     city: '',
     state: '',
     cep: '', // Alterado para cep
+  });
+
+  // --- Notification System State ---
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationData, setNotificationData] = useState({
+    userId: '',
+    title: '',
+    message: ''
   });
 
   // --- Sistema de Feedback (Toast) ---
@@ -293,6 +302,54 @@ export default function AdminCustomers() {
   }
 
   // --- Renderização ---
+  // --- Notification System ---
+
+  const handleOpenNotificationModal = (customer: AdminCustomer) => {
+    setNotificationData({
+      userId: customer.id,
+      title: '',
+      message: ''
+    });
+    setShowNotificationModal(true);
+  };
+
+  const handleSendNotification = async () => {
+    if (!notificationData.title || !notificationData.message) {
+      showMessage("Título e mensagem são obrigatórios.", true);
+      return;
+    }
+
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) return;
+
+      const response = await fetch(`${FUNCTIONS_URL}/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: notificationData.userId,
+          title: notificationData.title,
+          message: notificationData.message,
+          type: 'system'
+        }),
+      });
+
+      if (response.ok) {
+        showMessage("Notificação enviada com sucesso!");
+        setShowNotificationModal(false);
+      } else {
+        const error = await response.json();
+        showMessage(error.error || "Erro ao enviar notificação", true);
+      }
+    } catch (error) {
+      showMessage("Erro de rede ao enviar notificação", true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <AdminNavigation />
@@ -453,6 +510,13 @@ export default function AdminCustomers() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleOpenNotificationModal(customer)}
+                        className="text-purple-600 hover:text-purple-900 mr-4"
+                        title="Enviar Notificação"
+                      >
+                        <Bell className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => {
                           setSelectedCustomer(customer);
@@ -759,8 +823,57 @@ export default function AdminCustomers() {
           </div>
         )}
 
+        {/* Modal de Notificação */}
+        {showNotificationModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-2xl bg-white">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Enviar Notificação
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="font-medium text-gray-700">Título</label>
+                  <input
+                    type="text"
+                    value={notificationData.title}
+                    onChange={(e) => setNotificationData({ ...notificationData, title: e.target.value })}
+                    className="w-full mt-1 p-2 border rounded-md"
+                    placeholder="Ex: Promoção Especial"
+                  />
+                </div>
+                <div>
+                  <label className="font-medium text-gray-700">Mensagem</label>
+                  <textarea
+                    value={notificationData.message}
+                    onChange={(e) => setNotificationData({ ...notificationData, message: e.target.value })}
+                    className="w-full mt-1 p-2 border rounded-md h-32"
+                    placeholder="Digite sua mensagem aqui..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => setShowNotificationModal(false)}
+                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSendNotification}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+                >
+                  Enviar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
-

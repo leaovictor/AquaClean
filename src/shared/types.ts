@@ -88,4 +88,5 @@ export interface UserSubscription {
   status: string;
   current_period_end: string;
   remaining_washes: number;
+  auto_renew: boolean;
 }

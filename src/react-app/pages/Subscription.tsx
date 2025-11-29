@@ -54,7 +54,7 @@ export default function Subscription() {
       // 3. Fetch Current Subscription (if any)
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('subscription_status, subscription_plan_id')
+        .select('subscription_status, subscription_plan_id, auto_renew')
         .eq('id', currentUser?.id)
         .single();
 
@@ -63,7 +63,8 @@ export default function Subscription() {
           plan_id: profileData.subscription_plan_id,
           status: 'active',
           current_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(), // Mock date
-          remaining_washes: 999
+          remaining_washes: 999,
+          auto_renew: profileData.auto_renew ?? true
         } as any);
       }
 
@@ -101,6 +102,45 @@ export default function Subscription() {
     } catch (error) {
       console.error("Error subscribing:", error);
       setMessage({ type: 'error', text: 'Erro de conexão.' });
+      setProcessing(false);
+    }
+  };
+
+  const handleCancelSubscription = async (autoRenew: boolean = false) => {
+    if (!session) return;
+
+    const actionText = autoRenew ? "reativar" : "cancelar";
+    const confirmMessage = autoRenew
+      ? "Deseja reativar a renovação automática da sua assinatura?"
+      : "Tem certeza que deseja cancelar a renovação automática? Sua assinatura continuará ativa até o fim do período.";
+
+    if (!window.confirm(confirmMessage)) return;
+
+    setProcessing(true);
+    setMessage({ type: 'success', text: `Processando ${actionText === 'reativar' ? 'reativação' : 'cancelamento'}...` });
+
+    try {
+      const response = await fetch(`${functionsBaseUrl}/cancel-subscription`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ auto_renew: autoRenew }),
+      });
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: `Renovação automática ${autoRenew ? 'reativada' : 'cancelada'} com sucesso.` });
+        // Refresh data
+        fetchData();
+      } else {
+        const errorData = await response.json();
+        setMessage({ type: 'error', text: errorData.error || `Falha ao ${actionText} assinatura.` });
+      }
+    } catch (error) {
+      console.error(`Error ${actionText}ing:`, error);
+      setMessage({ type: 'error', text: 'Erro de conexão.' });
+    } finally {
       setProcessing(false);
     }
   };
@@ -159,21 +199,50 @@ export default function Subscription() {
         {/* Current Subscription */}
         {currentSubscription && (
           <div className={`rounded-2xl border p-6 mb-8 ${theme.card}`}>
-            <h2 className={`text-xl font-semibold mb-4 ${theme.text}`}>Assinatura Atual</h2>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div>
+                <h2 className={`text-xl font-semibold mb-2 ${theme.text}`}>Assinatura Atual</h2>
                 <p className={`font-medium ${theme.text}`}>
                   {plans.find(p => p.id === currentSubscription.plan_id)?.name || 'Plano Ativo'}
                 </p>
-                <p className={`text-sm ${theme.subText}`}>
-                  Status: <span className="text-green-600 font-bold uppercase">{currentSubscription.status}</span>
-                </p>
+                <div className="flex items-center space-x-4 mt-1">
+                  <p className={`text-sm ${theme.subText}`}>
+                    Status: <span className="text-green-600 font-bold uppercase">{currentSubscription.status}</span>
+                  </p>
+                  <p className={`text-sm ${theme.subText}`}>
+                    Renova em: <span className={`font-medium ${theme.text}`}>{new Date(currentSubscription.current_period_end).toLocaleDateString()}</span>
+                  </p>
+                </div>
+                {!currentSubscription.auto_renew && (
+                  <p className="text-sm text-yellow-500 mt-2 font-medium">
+                    Cancelamento Agendado. Sua assinatura não será renovada.
+                  </p>
+                )}
               </div>
+
               <div className="text-right">
-                <p className={`text-sm ${theme.subText}`}>Renova em</p>
-                <p className={`font-medium ${theme.text}`}>
-                  {new Date(currentSubscription.current_period_end).toLocaleDateString()}
-                </p>
+                {currentSubscription.auto_renew ? (
+                  <button
+                    onClick={() => handleCancelSubscription(false)}
+                    disabled={processing}
+                    className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
+                  >
+                    {processing ? 'Processando...' : 'Cancelar Assinatura'}
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="px-4 py-2 text-sm font-medium text-gray-500 bg-gray-100 rounded-lg border border-gray-200">
+                      Cancelamento Agendado
+                    </span>
+                    <button
+                      onClick={() => handleCancelSubscription(true)}
+                      disabled={processing}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                      {processing ? 'Processando...' : 'Reativar Assinatura'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

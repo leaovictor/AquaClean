@@ -20,6 +20,8 @@ import ForgotPassword from "@/react-app/pages/ForgotPassword"; // Import ForgotP
 import UpdatePassword from "@/react-app/pages/UpdatePassword"; // Import UpdatePassword component
 import AdminProtectedRoute from "@/react-app/components/AdminProtectedRoute";
 
+import WhatsAppWidget from "@/react-app/components/WhatsAppWidget"; // Import WhatsAppWidget
+
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
 
@@ -38,6 +40,7 @@ export default function App() {
   return (
     <AuthContextProvider>
       <Router>
+        <WhatsAppWidget />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
