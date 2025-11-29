@@ -15,7 +15,7 @@ export default function Profile() {
   const [dataLoading, setDataLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showVehicleForm, setShowVehicleForm] = useState(false);
-  
+
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [vehicleForm, setVehicleForm] = useState({
@@ -173,10 +173,26 @@ export default function Profile() {
     }
   };
 
+  const isSubscriber = currentUser?.profile?.subscription_status === 'active';
+
+  const theme = {
+    bg: isSubscriber ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" : "bg-gradient-to-br from-blue-50 to-cyan-100",
+    text: isSubscriber ? "text-white" : "text-gray-900",
+    subText: isSubscriber ? "text-gray-300" : "text-gray-600",
+    card: isSubscriber ? "bg-slate-800 border-yellow-500/30 shadow-xl shadow-yellow-900/10" : "bg-white border-blue-100 shadow-lg",
+    input: isSubscriber ? "bg-slate-700 border-slate-600 text-white focus:ring-yellow-500" : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500",
+    buttonPrimary: isSubscriber ? "bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-900" : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white",
+    buttonSecondary: isSubscriber ? "bg-slate-700 hover:bg-slate-600 text-gray-300" : "bg-gray-200 hover:bg-gray-300 text-gray-800",
+    iconPrimary: isSubscriber ? "text-yellow-400" : "text-blue-600",
+    iconBg: isSubscriber ? "bg-yellow-500/10" : "bg-blue-100",
+    label: isSubscriber ? "text-gray-300" : "text-gray-700",
+    logoBg: isSubscriber ? "bg-gradient-to-r from-yellow-500 to-amber-600" : "bg-gradient-to-r from-blue-600 to-cyan-600"
+  };
+
   if (loading || dataLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center">
-        <div className="animate-pulse text-blue-600">
+      <div className={`min-h-screen ${theme.bg} flex items-center justify-center`}>
+        <div className={`animate-pulse ${theme.iconPrimary}`}>
           <Car className="w-12 h-12" />
         </div>
       </div>
@@ -184,21 +200,20 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
+    <div className={`min-h-screen ${theme.bg}`}>
       <Navigation />
-      
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Configurações de Perfil</h1>
-          <p className="text-gray-600">Gerencie suas informações pessoais e veículos.</p>
+          <h1 className={`text-3xl font-bold mb-2 ${theme.text}`}>Configurações de Perfil</h1>
+          <p className={theme.subText}>Gerencie suas informações pessoais e veículos.</p>
         </div>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-xl flex items-center space-x-2 ${
-            message.type === 'success' 
-              ? 'bg-green-50 border border-green-200' 
-              : 'bg-red-50 border border-red-200'
-          }`}>
+          <div className={`mb-6 p-4 rounded-xl flex items-center space-x-2 ${message.type === 'success'
+            ? 'bg-green-50 border border-green-200'
+            : 'bg-red-50 border border-red-200'
+            }`}>
             {message.type === 'success' ? (
               <CheckCircle className="w-5 h-5 text-green-600" />
             ) : (
@@ -211,13 +226,13 @@ export default function Profile() {
         )}
 
         {/* Profile Information */}
-        <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 mb-8">
+        <div className={`rounded-2xl border p-6 mb-8 ${theme.card}`}>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Informações Pessoais</h2>
+            <h2 className={`text-xl font-semibold ${theme.text}`}>Informações Pessoais</h2>
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
+                className={`flex items-center space-x-2 font-medium ${isSubscriber ? 'text-yellow-400 hover:text-yellow-300' : 'text-blue-600 hover:text-blue-700'}`}
               >
                 <Edit2 className="w-4 h-4" />
                 <span>Editar</span>
@@ -229,38 +244,38 @@ export default function Profile() {
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                     Nome
                   </label>
                   <input
                     type="text"
                     value={profileForm.first_name}
                     onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                     Sobrenome
                   </label>
                   <input
                     type="text"
                     value={profileForm.last_name}
                     onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                   Telefone
                 </label>
                 <input
                   type="tel"
                   value={profileForm.phone}
                   onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                 />
               </div>
 
@@ -270,71 +285,71 @@ export default function Profile() {
                   id="phone_is_whatsapp"
                   checked={profileForm.phone_is_whatsapp}
                   onChange={(e) => setProfileForm({ ...profileForm, phone_is_whatsapp: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  className={`rounded border-gray-300 shadow-sm focus:ring focus:ring-opacity-50 ${isSubscriber ? 'text-yellow-500 focus:border-yellow-300 focus:ring-yellow-200' : 'text-blue-600 focus:border-blue-300 focus:ring-blue-200'}`}
                 />
-                <label htmlFor="phone_is_whatsapp" className="ml-2 text-sm text-gray-700">
+                <label htmlFor="phone_is_whatsapp" className={`ml-2 text-sm ${theme.label}`}>
                   Meu telefone principal é também o meu WhatsApp
                 </label>
               </div>
 
               {!profileForm.phone_is_whatsapp && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                     WhatsApp
                   </label>
                   <input
                     type="tel"
                     value={profileForm.whatsapp_number}
                     onChange={(e) => setProfileForm({ ...profileForm, whatsapp_number: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                   Endereço
                 </label>
                 <input
                   type="text"
                   value={profileForm.address}
                   onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                 />
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                     Cidade
                   </label>
                   <input
                     type="text"
                     value={profileForm.city}
                     onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                     Estado
                   </label>
                   <input
                     type="text"
                     value={profileForm.state}
                     onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                     CEP
                   </label>
                   <input
                     type="text"
                     value={profileForm.zip_code}
                     onChange={(e) => setProfileForm({ ...profileForm, zip_code: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                   />
                 </div>
               </div>
@@ -342,14 +357,14 @@ export default function Profile() {
               <div className="flex space-x-4">
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200"
+                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${theme.buttonPrimary}`}
                 >
                   Salvar Alterações
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-xl font-medium transition-all duration-200"
+                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${theme.buttonSecondary}`}
                 >
                   Cancelar
                 </button>
@@ -365,39 +380,39 @@ export default function Profile() {
                     className="w-16 h-16 rounded-full"
                   />
                 ) : (
-                  <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-white" />
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${theme.logoBg}`}>
+                    <User className={`w-8 h-8 ${isSubscriber ? 'text-slate-900' : 'text-white'}`} />
                   </div>
                 )}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className={`text-lg font-semibold ${theme.text}`}>
                     {profile.first_name || profile.last_name
                       ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
                       : currentUser?.email
                     }
                   </h3>
-                  <p className="text-gray-600">{currentUser?.email}</p>
+                  <p className={theme.subText}>{currentUser?.email}</p>
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Telefone</p>
-                  <p className="text-gray-900">{profile.phone || 'Não fornecido'}</p>
+                  <p className={`text-sm font-medium ${isSubscriber ? 'text-gray-400' : 'text-gray-500'}`}>Telefone</p>
+                  <p className={theme.text}>{profile.phone || 'Não fornecido'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">WhatsApp</p>
-                  <p className="text-gray-900">
-                    {profile.phone_is_whatsapp 
-                      ? profile.phone 
+                  <p className={`text-sm font-medium ${isSubscriber ? 'text-gray-400' : 'text-gray-500'}`}>WhatsApp</p>
+                  <p className={theme.text}>
+                    {profile.phone_is_whatsapp
+                      ? profile.phone
                       : profile.whatsapp_number || 'Não fornecido'
                     }
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Endereço</p>
-                  <p className="text-gray-900">
-                    {profile.address 
+                  <p className={`text-sm font-medium ${isSubscriber ? 'text-gray-400' : 'text-gray-500'}`}>Endereço</p>
+                  <p className={theme.text}>
+                    {profile.address
                       ? `${profile.address}${profile.city ? `, ${profile.city}` : ''}${profile.state ? `, ${profile.state}` : ''} ${profile.zip_code || ''}`
                       : 'Não fornecido'
                     }
@@ -409,12 +424,12 @@ export default function Profile() {
         </div>
 
         {/* Vehicles */}
-        <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
+        <div className={`rounded-2xl border p-6 ${theme.card}`}>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Seus Veículos</h2>
+            <h2 className={`text-xl font-semibold ${theme.text}`}>Seus Veículos</h2>
             <button
               onClick={() => setShowVehicleForm(true)}
-              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-200"
+              className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${theme.buttonPrimary}`}
             >
               <Plus className="w-4 h-4" />
               <span>Adicionar Veículo</span>
@@ -422,12 +437,12 @@ export default function Profile() {
           </div>
 
           {showVehicleForm && (
-            <div className="mb-6 p-6 border border-gray-200 rounded-xl bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Adicionar Novo Veículo</h3>
+            <div className={`mb-6 p-6 border rounded-xl ${isSubscriber ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold mb-4 ${theme.text}`}>Adicionar Novo Veículo</h3>
               <form onSubmit={handleVehicleSubmit} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                       Marca *
                     </label>
                     <input
@@ -435,12 +450,12 @@ export default function Profile() {
                       required
                       value={vehicleForm.make}
                       onChange={(e) => setVehicleForm({ ...vehicleForm, make: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                       placeholder="Toyota, Honda, Ford..."
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                       Modelo *
                     </label>
                     <input
@@ -448,7 +463,7 @@ export default function Profile() {
                       required
                       value={vehicleForm.model}
                       onChange={(e) => setVehicleForm({ ...vehicleForm, model: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                       placeholder="Camry, Civic, F-150..."
                     />
                   </div>
@@ -456,7 +471,7 @@ export default function Profile() {
 
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                       Ano
                     </label>
                     <input
@@ -465,30 +480,30 @@ export default function Profile() {
                       max={new Date().getFullYear() + 2}
                       value={vehicleForm.year}
                       onChange={(e) => setVehicleForm({ ...vehicleForm, year: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                       Cor
                     </label>
                     <input
                       type="text"
                       value={vehicleForm.color}
                       onChange={(e) => setVehicleForm({ ...vehicleForm, color: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                       placeholder="Vermelho, Azul, Prata..."
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
                       Placa
                     </label>
                     <input
                       type="text"
                       value={vehicleForm.plate}
                       onChange={(e) => setVehicleForm({ ...vehicleForm, plate: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent ${theme.input}`}
                       placeholder="ABC-123"
                     />
                   </div>
@@ -500,23 +515,23 @@ export default function Profile() {
                       type="checkbox"
                       checked={vehicleForm.is_default}
                       onChange={(e) => setVehicleForm({ ...vehicleForm, is_default: e.target.checked })}
-                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                      className={`rounded border-gray-300 shadow-sm focus:ring focus:ring-opacity-50 ${isSubscriber ? 'text-yellow-500 focus:border-yellow-300 focus:ring-yellow-200' : 'text-blue-600 focus:border-blue-300 focus:ring-blue-200'}`}
                     />
-                    <span className="ml-2 text-sm text-gray-700">Definir como veículo padrão</span>
+                    <span className={`ml-2 text-sm ${theme.label}`}>Definir como veículo padrão</span>
                   </label>
                 </div>
 
                 <div className="flex space-x-4">
                   <button
                     type="submit"
-                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200"
+                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${theme.buttonPrimary}`}
                   >
                     Adicionar Veículo
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowVehicleForm(false)}
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-xl font-medium transition-all duration-200"
+                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${theme.buttonSecondary}`}
                   >
                     Cancelar
                   </button>
@@ -527,39 +542,39 @@ export default function Profile() {
 
           {vehicles.length === 0 ? (
             <div className="text-center py-8">
-              <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">Nenhum veículo registrado</p>
-              <p className="text-gray-500 text-sm">Adicione seu primeiro veículo para começar a agendar lavagens</p>
+              <Car className={`w-12 h-12 mx-auto mb-4 ${isSubscriber ? 'text-slate-600' : 'text-gray-400'}`} />
+              <p className={`mb-4 ${theme.subText}`}>Nenhum veículo registrado</p>
+              <p className={`text-sm ${isSubscriber ? 'text-gray-500' : 'text-gray-500'}`}>Adicione seu primeiro veículo para começar a agendar lavagens</p>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {vehicles.map((vehicle) => (
                 <div
                   key={vehicle.id}
-                  className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors"
+                  className={`border rounded-xl p-4 transition-colors ${isSubscriber ? 'border-slate-700 hover:bg-slate-700/50' : 'border-gray-200 hover:bg-gray-50'}`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Car className="w-5 h-5 text-blue-600" />
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${theme.iconBg}`}>
+                        <Car className={`w-5 h-5 ${theme.iconPrimary}`} />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className={`font-medium ${theme.text}`}>
                           {vehicle.year} {vehicle.make} {vehicle.model}
                         </p>
                         {vehicle.color && (
-                          <p className="text-sm text-gray-600">{vehicle.color}</p>
+                          <p className={`text-sm ${theme.subText}`}>{vehicle.color}</p>
                         )}
                       </div>
                     </div>
                     {vehicle.is_default && (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      <span className={`text-xs px-2 py-1 rounded-full ${isSubscriber ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-100 text-green-800'}`}>
                         Padrão
                       </span>
                     )}
                   </div>
                   {vehicle.plate && (
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className={`text-sm mb-3 ${theme.subText}`}>
                       Placa: {vehicle.plate}
                     </p>
                   )}

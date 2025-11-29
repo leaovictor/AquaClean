@@ -13,6 +13,7 @@ import AdminPlansPage from "@/react-app/pages/admin/Plans";
 import AdminReportsPage from "@/react-app/pages/admin/Reports";
 import AdminTimeSlotManagerPage from "@/react-app/pages/admin/TimeSlotManager";
 import AdminAssetsPage from "@/react-app/pages/admin/Assets";
+import AdminSettingsPage from "@/react-app/pages/admin/Settings";
 import SignIn from "@/react-app/pages/SignIn";
 import SignUp from "@/react-app/pages/SignUp";
 import ForgotPassword from "@/react-app/pages/ForgotPassword"; // Import ForgotPassword component
@@ -137,6 +138,14 @@ export default function App() {
             element={
               <AdminProtectedRoute>
                 <AdminAssetsPage />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminProtectedRoute>
+                <AdminSettingsPage />
               </AdminProtectedRoute>
             }
           />

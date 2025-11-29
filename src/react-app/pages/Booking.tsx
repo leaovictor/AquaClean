@@ -1,17 +1,16 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState, useCallback } from "react";
 import Navigation from "@/react-app/components/Navigation";
-import { Calendar, Car, Clock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import type { Vehicle, TimeSlot, Appointment } from "@/shared/types";
+import { Calendar, Car, Clock, CheckCircle, AlertCircle, Loader2, Package, Info } from "lucide-react";
+import type { Vehicle, TimeSlot, Appointment, Service, Product } from "@/shared/types";
 import { useAuth } from "@/react-app/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
 
 // Usando a URL de produção para a Edge Function
 const functionsBaseUrl = 'https://ilfoxowzpibbgrpveqrs.supabase.co/functions/v1';
 
-// Tipagem unificada para o estado de mensagem
 type MessageState = { type: 'success' | 'error'; text: string } | null;
 
-// Função utilitária para formatação de data (pode ser movida para um arquivo de utils)
 const formatDate = (dateString: string) => {
   return new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -24,19 +23,29 @@ const formatDate = (dateString: string) => {
 export default function Booking() {
   const { currentUser, session, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Data States
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]); // ISO strings of booked start times
+
+  // Selection States
   const [selectedVehicle, setSelectedVehicle] = useState<number | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null);
-  const [selectedService, setSelectedService] = useState<string>("basic");
+  const [selectedService, setSelectedService] = useState<number | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [specialInstructions, setSpecialInstructions] = useState("");
+
+  // UI States
   const [dataLoading, setDataLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<MessageState>(null);
-  const [showConfirmation, setShowConfirmation] = useState(false); 
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isSubscriber, setIsSubscriber] = useState(false);
 
-  // Função centralizada para definir e limpar mensagens
   const displayMessage = useCallback((msg: MessageState, duration = 5000) => {
     setMessage(msg);
     if (msg) {
@@ -46,34 +55,62 @@ export default function Booking() {
 
   const handleAuthError = useCallback((text: string) => {
     displayMessage({ type: 'error', text: text }, 3000);
-    // Força o usuário a refazer o login em caso de falha de autenticação (401)
-    setTimeout(() => navigate("/"), 2500); 
+    setTimeout(() => navigate("/"), 2500);
   }, [displayMessage, navigate]);
 
   const fetchData = useCallback(async () => {
     if (!session || !session.access_token) {
-        handleAuthError("Sessão inválida ou expirada. Faça login novamente.");
-        return;
+      handleAuthError("Sessão inválida ou expirada. Faça login novamente.");
+      return;
     }
-    
+
     try {
       const token = session.access_token;
       const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
 
-      // Função auxiliar para processar a resposta e capturar 401
+      // 1. Fetch Public Data (Services, Products) directly from Supabase
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .order('price');
+
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('price');
+
+      if (servicesError) throw servicesError;
+      if (productsError) throw productsError;
+
+      setServices(servicesData || []);
+      setProducts(productsData || []);
+      if (servicesData && servicesData.length > 0) {
+        setSelectedService(servicesData[0].id);
+      }
+
+      // 2. Fetch User Data (Profile for subscription)
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('subscription_status')
+        .eq('id', currentUser?.id)
+        .single();
+
+      if (!profileError && profileData) {
+        setIsSubscriber(profileData.subscription_status === 'active');
+      }
+
+      // 3. Fetch Edge Function Data
       const processResponse = async (res: Response, item: string) => {
         if (res.status === 401) {
-            handleAuthError(`Falha de autenticação ao carregar ${item}.`);
-            return null;
+          handleAuthError(`Falha de autenticação ao carregar ${item}.`);
+          return null;
         }
-        if (res.ok) {
-            return res.json();
-        } else {
-            const errorData = await res.json();
-            console.error(`Error fetching ${item}:`, errorData);
-            displayMessage({ type: 'error', text: errorData.error || `Failed to load ${item}` });
-            return null;
-        }
+        if (res.ok) return res.json();
+        const errorData = await res.json();
+        console.error(`Error fetching ${item}:`, errorData);
+        return null;
       };
 
       const [vehiclesRes, timeSlotsRes, appointmentsRes] = await Promise.all([
@@ -82,36 +119,45 @@ export default function Booking() {
         fetch(`${functionsBaseUrl}/appointments`, { headers }),
       ]);
 
-      const [vehiclesData, timeSlotsData, appointmentsData] = await Promise.all([
-          processResponse(vehiclesRes, 'vehicles'),
-          processResponse(timeSlotsRes, 'time slots'),
-          processResponse(appointmentsRes, 'appointments'),
-      ]);
+      const vehiclesData = await processResponse(vehiclesRes, 'vehicles');
+      const timeSlotsData = await processResponse(timeSlotsRes, 'time slots');
+      const appointmentsData = await processResponse(appointmentsRes, 'appointments');
 
       if (vehiclesData) {
         setVehicles(vehiclesData);
         const defaultVehicle = vehiclesData.find((v: Vehicle) => v.is_default);
-        // Garante que a seleção inicial respeite a lista atual
-        if (defaultVehicle) {
-          setSelectedVehicle(defaultVehicle.id);
-        } else if (vehiclesData.length > 0) {
-          setSelectedVehicle(vehiclesData[0].id);
-        }
+        if (defaultVehicle) setSelectedVehicle(defaultVehicle.id);
+        else if (vehiclesData.length > 0) setSelectedVehicle(vehiclesData[0].id);
       }
 
       if (timeSlotsData) {
         const now = new Date();
-        // Filtra slots no lado do cliente para garantir que são futuros
         const filteredTimeSlots = timeSlotsData.filter((slot: TimeSlot) => {
-          // Cria o objeto Date com a data e hora do slot
           const slotDateTime = new Date(`${slot.date}T${slot.time}:00`);
           return slotDateTime > now;
         });
         setTimeSlots(filteredTimeSlots);
       }
 
-      if (appointmentsData) {
-        setAppointments(appointmentsData);
+      if (appointmentsData) setAppointments(appointmentsData);
+
+      // 4. Fetch Booked Slots (Public Availability) via RPC
+      // Fetch for next 30 days
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 30);
+
+      const { data: bookedData, error: bookedError } = await supabase
+        .rpc('get_booked_slots', {
+          p_start_date: startDate.toISOString(),
+          p_end_date: endDate.toISOString()
+        });
+
+      if (bookedError) {
+        console.error("Error fetching booked slots:", bookedError);
+      } else {
+        // Store as ISO strings for easy comparison
+        setBookedSlots(bookedData.map((b: any) => new Date(b.start_time).toISOString()));
       }
 
     } catch (error) {
@@ -120,432 +166,324 @@ export default function Booking() {
     } finally {
       setDataLoading(false);
     }
-  }, [session, handleAuthError, displayMessage]);
+  }, [session, currentUser, handleAuthError, displayMessage]);
 
   useEffect(() => {
-    // Redireciona se não houver usuário logado após o carregamento
     if (!currentUser && !loading) {
       navigate("/");
       return;
     }
-
-    // Só inicia a busca de dados se a sessão estiver válida
     if (currentUser && session) {
       fetchData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, session, loading, navigate, fetchData]); // Adicionado 'fetchData' como dependência
+  }, [currentUser, session, loading, navigate, fetchData]);
+
+  // --- Logic Helpers ---
+
+  const isSlotBooked = (date: string, time: string) => {
+    // Construct ISO string for the slot (assuming local time input, convert to UTC or match how backend stores it)
+    // The backend stores as UTC. The 'date' and 'time' from time-slots are usually local representation or plain strings.
+    // We need to be careful with timezones.
+    // Let's assume the 'date' and 'time' from time-slots are what we want to book.
+    // The RPC returns UTC timestamps.
+    // We need to compare the slot's intended start time (as ISO) with the booked slots.
+
+    const slotDate = new Date(`${date}T${time}:00`);
+    const slotISO = slotDate.toISOString();
+
+    // Check if any booked slot matches this time
+    // Note: This exact match might be tricky with seconds/milliseconds. 
+    // Ideally we check if it falls within a range or use a tolerance.
+    // But for now, let's try exact ISO string match (stripping milliseconds if needed).
+
+    return bookedSlots.some(bookedISO => {
+      // Compare up to minutes
+      const b = new Date(bookedISO);
+      return b.getTime() === slotDate.getTime();
+    });
+  };
+
+  const calculateTotal = () => {
+    const service = services.find(s => s.id === selectedService);
+    const servicePrice = (isSubscriber && service) ? 0 : (service?.price || 0);
+
+    const productsPrice = selectedProducts.reduce((total, pId) => {
+      const product = products.find(p => p.id === pId);
+      return total + (product?.price || 0);
+    }, 0);
+
+    return servicePrice + productsPrice;
+  };
+
+  const toggleProduct = (productId: number) => {
+    setSelectedProducts(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
 
   const handleInitiateBooking = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!session || !session.access_token) { 
-      handleAuthError('Sua sessão expirou. Faça login para agendar.');
+    if (!session) return;
+    if (!selectedVehicle || !selectedTimeSlot || !selectedService) {
+      displayMessage({ type: 'error', text: 'Preencha todos os campos obrigatórios.' });
       return;
     }
-
-    if (!selectedVehicle || !selectedTimeSlot) {
-      displayMessage({ type: 'error', text: 'Selecione um veículo e um horário.' });
-      return;
-    }
-
-    setShowConfirmation(true); // Open confirmation popup
+    setShowConfirmation(true);
   };
 
   const handleConfirmBooking = async () => {
-    if (!session || !session.access_token) { 
-      handleAuthError('Sua sessão expirou. Faça login para agendar.');
-      setShowConfirmation(false);
-      return;
-    }
-    const token = session.access_token;
-
+    if (!session?.access_token) return;
     setSubmitting(true);
-    setMessage(null);
 
-    console.log('Selected Time Slot:', selectedTimeSlot);
-    console.log('Selected Time Slot Date:', selectedTimeSlot?.date);
-    console.log('Selected Time Slot Time:', selectedTimeSlot?.time);
+    const selectedDateTime = new Date(`${selectedTimeSlot?.date}T${selectedTimeSlot?.time}:00`);
 
-    // Encontra o tipo de serviço selecionado para extrair o nome/ID
-    const serviceDetails = serviceTypes.find(s => s.id === selectedService);
-
-    // Converte a data e hora selecionadas para um string ISO UTC
-    const selectedDateTime = new Date(`${selectedTimeSlot.date}T${selectedTimeSlot.time}:00`);
-    const utcDateTimeString = selectedDateTime.toISOString();
-    
     try {
       const response = await fetch(`${functionsBaseUrl}/appointments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           vehicle_id: selectedVehicle,
           time_slot_id: selectedTimeSlot?.id,
-          start_time_utc: utcDateTimeString, // Envia a data/hora em formato UTC ISO
-          service_type: selectedService, // Enviar o ID do serviço
+          start_time_utc: selectedDateTime.toISOString(),
+          service_type: selectedService,
+          products: selectedProducts,
           special_instructions: specialInstructions || undefined,
         }),
       });
 
       if (response.ok) {
-        displayMessage({ type: 'success', text: 'Agendamento concluído com sucesso!' }, 2000);
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 2000);
+        displayMessage({ type: 'success', text: 'Agendamento realizado!' });
+        setTimeout(() => navigate("/dashboard"), 2000);
       } else {
         const errorData = await response.json();
-        if (response.status === 401) {
-             handleAuthError(errorData.error || 'Autenticação falhou. Faça login novamente.');
-             return;
-        }
-        displayMessage({ type: 'error', text: errorData.error || 'Falha ao agendar.' });
+        displayMessage({ type: 'error', text: errorData.error || 'Erro ao agendar.' });
       }
     } catch (error) {
-      console.error("Error booking appointment:", error);
-      displayMessage({ type: 'error', text: 'Falha ao agendar: erro de conexão.' });
+      displayMessage({ type: 'error', text: 'Erro de conexão.' });
     } finally {
       setSubmitting(false);
       setShowConfirmation(false);
     }
   };
 
+  const isSubscriberUser = currentUser?.profile?.subscription_status === 'active';
+
   if (loading || dataLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 flex items-center justify-center">
-        <div className="animate-spin text-blue-600">
-          <Loader2 className="w-12 h-12" />
-        </div>
+      <div className={`min-h-screen flex items-center justify-center ${isSubscriberUser ? "bg-slate-900" : "bg-gradient-to-br from-blue-50 to-cyan-100"}`}>
+        <Loader2 className={`w-12 h-12 animate-spin ${isSubscriberUser ? "text-yellow-400" : "text-blue-600"}`} />
       </div>
     );
   }
 
-  // --- Lógica de Renderização Condicional (Early Returns) ---
-
-  // 1. Sem Veículos
-  if (vehicles.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
-        <Navigation />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-8 text-center">
-            <Car className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              Nenhum Veículo Encontrado
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Você precisa adicionar um veículo antes de agendar um serviço.
-            </p>
-            <button
-              onClick={() => navigate("/profile")}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200"
-            >
-              Adicionar Veículo
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Agendamento Ativo
-  const hasActiveAppointment = appointments.some(apt => apt.status === 'scheduled');
-
-  if (hasActiveAppointment) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
-        <Navigation />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-8 text-center">
-            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              Agendamento Ativo Encontrado
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Você já tem um agendamento ativo. Você pode ter apenas um agendamento de lavagem por vez.
-            </p>
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200"
-            >
-              Ir para o Painel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-
-  const serviceTypes = [
-    {
-      id: "basic",
-      name: "Lavagem Básica",
-      description: "Lavagem externa com enxágue e secagem",
-      price: "$15",
-      duration: "20 min"
-    },
-    {
-      id: "premium",
-      name: "Lavagem Premium",
-      description: "Limpeza interna e externa com brilho nos pneus",
-      price: "$25",
-      duration: "35 min"
-    },
-    {
-      id: "deluxe",
-      name: "Detalhe Deluxe",
-      description: "Detalhe completo com cera e limpeza interna profunda",
-      price: "$45",
-      duration: "60 min"
-    }
-  ];
-
-  // Group time slots by date
+  // Group slots
   const groupedTimeSlots = timeSlots.reduce((groups, slot) => {
-    if (!groups[slot.date]) {
-      groups[slot.date] = [];
-    }
+    if (!groups[slot.date]) groups[slot.date] = [];
     groups[slot.date].push(slot);
     return groups;
   }, {} as Record<string, TimeSlot[]>);
 
-  // --- Renderização Principal ---
+  const selectedServiceDetails = services.find(s => s.id === selectedService);
+
+  const theme = {
+    bg: isSubscriber ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" : "bg-gradient-to-br from-blue-50 to-cyan-100",
+    text: isSubscriber ? "text-white" : "text-gray-900",
+    subText: isSubscriber ? "text-gray-300" : "text-gray-600",
+    card: isSubscriber ? "bg-slate-800 border-yellow-500/30 shadow-xl shadow-yellow-900/10" : "bg-white border-blue-100 shadow-sm",
+    cardHover: isSubscriber ? "hover:border-yellow-500/50" : "hover:border-blue-300",
+    buttonPrimary: isSubscriber ? "bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-900" : "bg-blue-600 hover:bg-blue-700 text-white",
+    iconPrimary: isSubscriber ? "text-yellow-400" : "text-blue-600",
+    selectionBorder: isSubscriber ? "border-yellow-500 bg-yellow-500/10 ring-1 ring-yellow-500" : "border-blue-600 bg-blue-50 ring-1 ring-blue-600",
+    selectionText: isSubscriber ? "text-yellow-400" : "text-blue-600",
+    checkbox: isSubscriber ? "text-yellow-500" : "text-blue-600",
+    slotActive: isSubscriber ? "bg-yellow-500 text-slate-900 border-yellow-500" : "bg-blue-600 text-white border-blue-600",
+    slotInactive: isSubscriber ? "hover:border-yellow-500/50 hover:bg-yellow-500/10" : "hover:border-blue-400 hover:bg-blue-50",
+    modalBg: isSubscriber ? "bg-slate-800 text-white" : "bg-white text-gray-900",
+    modalBorder: isSubscriber ? "border-slate-700" : "border-gray-200"
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
+    <div className={`min-h-screen ${theme.bg}`}>
       <Navigation />
-      
-      {/* Sistema de Mensagens Flutuante */}
+
       {message && (
-        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg flex items-center space-x-3 transition-opacity duration-300 ${
-          message.type === 'success' ? 'bg-green-100 border border-green-200 text-green-800' :
-          'bg-red-100 border border-red-200 text-red-800'
-        }`}>
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-green-600" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-red-600" />
-          )}
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg flex items-center space-x-3 ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span>{message.text}</span>
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Agendar uma Lavagem</h1>
-          <p className="text-gray-600">Selecione seu veículo, serviço e horário preferido.</p>
-        </div>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <h1 className={`text-3xl font-bold mb-2 ${theme.text}`}>Agendar Lavagem</h1>
+        <p className={`mb-8 ${theme.subText}`}>Personalize seu serviço e escolha o melhor horário.</p>
 
-        <form onSubmit={handleInitiateBooking} className="space-y-8">
-          {/* 1. Vehicle Selection */}
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Selecione o Veículo</h2>
+        <form onSubmit={handleInitiateBooking} className="space-y-6">
+
+          {/* 1. Vehicle */}
+          <div className={`p-6 rounded-2xl border ${theme.card}`}>
+            <h2 className={`text-xl font-semibold mb-4 flex items-center ${theme.text}`}><Car className={`w-5 h-5 mr-2 ${theme.iconPrimary}`} /> Veículo</h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              {vehicles.map((vehicle) => (
-                <button
-                  key={vehicle.id}
-                  type="button"
-                  onClick={() => setSelectedVehicle(vehicle.id)}
-                  className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
-                    selectedVehicle === vehicle.id
-                      ? "border-blue-600 bg-blue-50 shadow-inner"
-                      : "border-gray-200 hover:border-blue-300"
-                  }`}
+              {vehicles.map(v => (
+                <button key={v.id} type="button"
+                  onClick={() => setSelectedVehicle(v.id)}
+                  className={`p-4 border rounded-xl text-left transition-all ${selectedVehicle === v.id ? theme.selectionBorder : `${isSubscriber ? 'border-slate-600' : 'border-gray-200'} ${theme.cardHover}`}`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Car className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 truncate">
-                        {vehicle.year} {vehicle.make} {vehicle.model}
-                      </p>
-                      {vehicle.color && (
-                        <p className="text-sm text-gray-600">{vehicle.color}</p>
-                      )}
-                      {vehicle.is_default && (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full mt-1 inline-block">
-                          Padrão
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  <p className={`font-bold ${theme.text}`}>{v.make} {v.model}</p>
+                  <p className={`text-sm ${theme.subText}`}>{v.plate}</p>
                 </button>
               ))}
+              {vehicles.length === 0 && <p className={theme.subText}>Nenhum veículo cadastrado.</p>}
             </div>
           </div>
 
-          {/* 2. Service Selection */}
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Selecione o Serviço</h2>
+          {/* 2. Service */}
+          <div className={`p-6 rounded-2xl border ${theme.card}`}>
+            <h2 className={`text-xl font-semibold mb-4 flex items-center ${theme.text}`}><CheckCircle className={`w-5 h-5 mr-2 ${theme.iconPrimary}`} /> Serviço</h2>
             <div className="grid gap-4">
-              {serviceTypes.map((service) => (
-                <button
-                  key={service.id}
-                  type="button"
-                  onClick={() => setSelectedService(service.id)}
-                  className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
-                    selectedService === service.id
-                      ? "border-blue-600 bg-blue-50 shadow-inner"
-                      : "border-gray-200 hover:border-blue-300"
-                  }`}
+              {services.map(s => (
+                <button key={s.id} type="button"
+                  onClick={() => setSelectedService(s.id)}
+                  className={`p-4 border rounded-xl text-left transition-all flex justify-between items-center ${selectedService === s.id ? theme.selectionBorder : `${isSubscriber ? 'border-slate-600' : 'border-gray-200'} ${theme.cardHover}`}`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{service.name}</h3>
-                      <p className="text-gray-600 text-sm mt-1">{service.description}</p>
-                      <p className="text-blue-600 font-medium text-sm mt-2">{service.duration}</p>
-                    </div>
-                    <span className="text-xl font-bold text-gray-900">{service.price}</span>
+                  <div>
+                    <h3 className={`font-bold ${theme.text}`}>{s.name}</h3>
+                    <p className={`text-sm ${theme.subText}`}>{s.description}</p>
+                    <p className={`text-xs mt-1 ${theme.iconPrimary}`}>{s.duration_minutes} min</p>
+                  </div>
+                  <div className="text-right">
+                    {isSubscriber ? (
+                      <div>
+                        <span className="text-gray-500 line-through text-sm">R$ {s.price}</span>
+                        <span className="block text-green-500 font-bold">Grátis</span>
+                      </div>
+                    ) : (
+                      <span className={`font-bold text-lg ${theme.text}`}>R$ {s.price}</span>
+                    )}
                   </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* 3. Time Slot Selection */}
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Selecione Data e Hora</h2>
-            
-            {Object.keys(groupedTimeSlots).length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Não há horários disponíveis ou todos os horários já passaram.</p>
+          {/* 3. Products */}
+          {products.length > 0 && (
+            <div className={`p-6 rounded-2xl border ${theme.card}`}>
+              <h2 className={`text-xl font-semibold mb-4 flex items-center ${theme.text}`}><Package className={`w-5 h-5 mr-2 ${theme.iconPrimary}`} /> Adicionais</h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {products.map(p => (
+                  <label key={p.id} className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${selectedProducts.includes(p.id) ? theme.selectionBorder : `${isSubscriber ? 'border-slate-600' : 'border-gray-200'} ${theme.cardHover}`}`}>
+                    <input type="checkbox" className={`w-5 h-5 rounded ${theme.checkbox}`}
+                      checked={selectedProducts.includes(p.id)}
+                      onChange={() => toggleProduct(p.id)}
+                    />
+                    <div className="ml-3 flex-1">
+                      <div className="flex justify-between">
+                        <span className={`font-medium ${theme.text}`}>{p.name}</span>
+                        <span className={`font-bold ${theme.text}`}>+ R$ {p.price}</span>
+                      </div>
+                      <p className={`text-xs ${theme.subText}`}>{p.description}</p>
+                    </div>
+                  </label>
+                ))}
               </div>
+            </div>
+          )}
+
+          {/* 4. Time Slots */}
+          <div className={`p-6 rounded-2xl border ${theme.card}`}>
+            <h2 className={`text-xl font-semibold mb-4 flex items-center ${theme.text}`}><Clock className={`w-5 h-5 mr-2 ${theme.iconPrimary}`} /> Data e Hora</h2>
+            {Object.keys(groupedTimeSlots).length === 0 ? (
+              <p className={`text-center py-4 ${theme.subText}`}>Nenhum horário disponível.</p>
             ) : (
               <div className="space-y-6">
-                {Object.entries(groupedTimeSlots).map(([date, slots]) => {
-                  const slotsForDate = slots.filter(slot => {
-                    const slotDateTime = new Date(`${slot.date}T${slot.time}:00`);
-                    return slotDateTime > new Date(); // Dupla checagem
-                  });
-
-                  if (slotsForDate.length === 0) return null; // Não renderiza a data se não houver slots futuros
-
-                  return (
-                    <div key={date}>
-                      <h3 className="font-medium text-gray-900 mb-3 border-b pb-1 border-gray-100">
-                        {formatDate(date)}
-                      </h3>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                        {slotsForDate.map((slot) => (
-                          <button
-                            key={`${slot.id}-${slot.time}`}
-                            type="button"
+                {Object.entries(groupedTimeSlots).map(([date, slots]) => (
+                  <div key={date}>
+                    <h3 className={`font-medium mb-3 border-b pb-1 ${theme.text} ${isSubscriber ? 'border-slate-700' : 'border-gray-200'}`}>{formatDate(date)}</h3>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                      {slots.map(slot => {
+                        const booked = isSlotBooked(slot.date, slot.time);
+                        return (
+                          <button key={slot.id} type="button"
+                            disabled={booked}
                             onClick={() => setSelectedTimeSlot(slot)}
-                            className={`p-3 border rounded-xl text-center transition-all duration-200 ${
-                              selectedTimeSlot?.id === slot.id
-                                ? "border-blue-600 bg-blue-50 text-blue-600 shadow-inner"
-                                : "border-gray-200 hover:border-blue-300"
-                            }`}
+                            className={`p-2 border rounded-lg text-center text-sm transition-all ${booked
+                              ? `cursor-not-allowed ${isSubscriber ? 'bg-slate-800 text-slate-600 border-slate-700' : 'bg-gray-100 text-gray-400 border-gray-200'}`
+                              : selectedTimeSlot?.id === slot.id
+                                ? theme.slotActive
+                                : `${isSubscriber ? 'border-slate-600 text-gray-300' : 'border-gray-200 text-gray-700'} ${theme.slotInactive}`
+                              }`}
                           >
-                            <div className="flex items-center justify-center">
-                              <Clock className="w-4 h-4 mr-1" />
-                              <span className="text-sm font-medium">{slot.time}</span>
-                            </div>
+                            {slot.time}
+                            {booked && <span className="block text-[10px] text-red-500">Ocupado</span>}
                           </button>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* 4. Special Instructions */}
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Instruções Especiais (Opcional)</h2>
-            <textarea
-              value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
-              placeholder="Quaisquer solicitações especiais ou áreas que precisam de atenção extra..."
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-shadow"
-            />
+          {/* 5. Summary & Submit */}
+          <div className={`p-6 rounded-2xl shadow-lg border sticky bottom-4 ${theme.card}`}>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <p className={`text-sm ${theme.subText}`}>Total Estimado</p>
+                <p className={`text-3xl font-bold ${theme.text}`}>R$ {calculateTotal().toFixed(2)}</p>
+              </div>
+              <button type="submit" disabled={submitting} className={`px-8 py-3 rounded-xl font-bold transition-colors disabled:opacity-50 shadow-lg ${theme.buttonPrimary}`}>
+                {submitting ? 'Processando...' : 'Confirmar Agendamento'}
+              </button>
+            </div>
           </div>
 
-          {/* 5. Submit Button */}
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6">
-            <button
-              type="submit"
-              disabled={submitting || !selectedVehicle || !selectedTimeSlot}
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-500 text-white py-4 rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {submitting && <Loader2 className="w-5 h-5 animate-spin" />}
-              <span>{submitting ? "Agendando..." : "Agendar Serviço"}</span>
-            </button>
-          </div>
         </form>
       </div>
 
-      {/* Popup de Confirmação */}
+      {/* Confirmation Modal */}
       {showConfirmation && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Confirmar Agendamento</h2>
-            <p className="text-gray-700 mb-6 text-center">Por favor, revise os detalhes do seu agendamento antes de confirmar:</p>
-            
-            <div className="space-y-4 mb-8">
-              {/* Detalhe do Veículo */}
-              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                <Car className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Veículo Selecionado</p>
-                  <p className="text-gray-700 text-sm">
-                    {vehicles.find(v => v.id === selectedVehicle)?.year}{' '}
-                    {vehicles.find(v => v.id === selectedVehicle)?.make}{' '}
-                    {vehicles.find(v => v.id === selectedVehicle)?.model}
-                  </p>
-                </div>
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-2xl p-6 max-w-md w-full shadow-2xl ${theme.modalBg}`}>
+            <h2 className="text-2xl font-bold mb-4">Confirmar Detalhes</h2>
+            <div className="space-y-3 mb-6">
+              <div className={`flex justify-between border-b pb-2 ${theme.modalBorder}`}>
+                <span className={theme.subText}>Serviço</span>
+                <span className="font-medium">{selectedServiceDetails?.name}</span>
               </div>
-
-              {/* Detalhe do Serviço */}
-              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Serviço</p>
-                  <p className="text-gray-700 text-sm">
-                    {serviceTypes.find(s => s.id === selectedService)?.name}{' '}
-                    ({serviceTypes.find(s => s.id === selectedService)?.price})
-                  </p>
+              {selectedProducts.length > 0 && (
+                <div className={`flex justify-between border-b pb-2 ${theme.modalBorder}`}>
+                  <span className={theme.subText}>Adicionais</span>
+                  <span className="font-medium">{selectedProducts.length} selecionado(s)</span>
                 </div>
+              )}
+              <div className={`flex justify-between border-b pb-2 ${theme.modalBorder}`}>
+                <span className={theme.subText}>Data</span>
+                <span className="font-medium">{selectedTimeSlot && formatDate(selectedTimeSlot.date)}</span>
               </div>
-
-              {/* Detalhe da Data/Hora */}
-              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                <Calendar className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Data e Hora</p>
-                  <p className="text-gray-700 text-sm">
-                    {selectedTimeSlot?.date && formatDate(selectedTimeSlot.date)}{' '}
-                    às {selectedTimeSlot?.time}
-                  </p>
-                </div>
+              <div className={`flex justify-between border-b pb-2 ${theme.modalBorder}`}>
+                <span className={theme.subText}>Horário</span>
+                <span className="font-medium">{selectedTimeSlot?.time}</span>
+              </div>
+              <div className="flex justify-between pt-2">
+                <span className="text-lg font-bold">Total</span>
+                <span className={`text-lg font-bold ${theme.iconPrimary}`}>R$ {calculateTotal().toFixed(2)}</span>
               </div>
             </div>
-
-            <div className="flex flex-col sm:flex-row-reverse justify-start sm:justify-between gap-3">
-              <button
-                onClick={handleConfirmBooking}
-                disabled={submitting}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {submitting && <Loader2 className="w-5 h-5 animate-spin" />}
-                <span>{submitting ? "Confirmando..." : "Confirmar Agendamento"}</span>
-              </button>
-              <button
-                onClick={() => setShowConfirmation(false)}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 transition-colors"
-              >
-                Voltar e Editar
-              </button>
+            <div className="flex gap-3">
+              <button onClick={() => setShowConfirmation(false)} className={`flex-1 py-3 border rounded-xl font-medium ${isSubscriber ? 'border-slate-600 hover:bg-slate-700' : 'border-gray-300 hover:bg-gray-50'}`}>Voltar</button>
+              <button onClick={handleConfirmBooking} className={`flex-1 py-3 rounded-xl font-bold shadow-lg ${theme.buttonPrimary}`}>Confirmar</button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

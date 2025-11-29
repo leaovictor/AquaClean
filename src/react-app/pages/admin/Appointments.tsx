@@ -5,7 +5,6 @@ import {
   Clock,
   CheckCircle,
   Car,
-  Edit2,
   Eye,
   Check,
   XCircle,
@@ -14,9 +13,9 @@ import {
   UserX,
   CalendarCheck,
   Calendar,
-  MessageSquareText,
+  MessageCircle,
 }
-from "lucide-react";
+  from "lucide-react";
 import { useAuth } from "@/react-app/AuthContext";
 import {
   fetchAllAppointments,
@@ -76,7 +75,7 @@ export default function AdminAppointments() {
     setDataLoading(true);
     try {
       const { data, count } = await fetchAllAppointments(page, pageSize, searchQuery, statusFilter);
-      
+
       const flattenedData = data.map((apt: any) => ({
         id: apt.id,
         user_email: apt.profiles.email,
@@ -110,9 +109,10 @@ export default function AdminAppointments() {
   const handleUpdateStatus = async (appointmentId: number, newStatus: string) => {
     try {
       await updateAppointmentStatus(appointmentId, newStatus);
-      setAppointments(prev => prev.map(app => (app.id === appointmentId ? { ...app, status: newStatus } : app)));
+      const typedStatus = newStatus as AdminAppointment['status'];
+      setAppointments(prev => prev.map(app => (app.id === appointmentId ? { ...app, status: typedStatus } : app)));
       if (selectedAppointment && selectedAppointment.id === appointmentId) {
-        setSelectedAppointment({ ...selectedAppointment, status: newStatus });
+        setSelectedAppointment({ ...selectedAppointment, status: typedStatus });
         refreshLogs(appointmentId);
       }
     } catch (error) {
@@ -142,7 +142,6 @@ export default function AdminAppointments() {
     try {
       const logs = await fetchAppointmentLogs(appointment.id);
       setAppointmentLogs(logs);
-      console.log('Fetched appointment logs in frontend:', logs);
     } catch (error) {
       console.error("Error fetching appointment logs:", error);
     }
@@ -186,7 +185,7 @@ export default function AdminAppointments() {
     try {
       // build ISO datetime using date + keep original time if needed; here backend expects full ISO
       const newStartTime = new Date(rescheduleDate).toISOString();
-      await rescheduleAppointment(selectedAppointment.id, newStartTime, rescheduleTimeSlotId);
+      await rescheduleAppointment(selectedAppointment.id, newStartTime, String(rescheduleTimeSlotId));
       alert("Agendamento reagendado com sucesso.");
       // refresh list
       await loadAppointments(currentPage);
@@ -382,15 +381,15 @@ export default function AdminAppointments() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <button onClick={() => { setSelectedAppointment(appointment); setShowModal(true); }} className="text-blue-600 hover:text-blue-900"><Eye className="w-4 h-4" /></button>
+                          <button onClick={() => handleOpenModal(appointment)} className="text-blue-600 hover:text-blue-900"><Eye className="w-4 h-4" /></button>
                           {(appointment.whatsapp_number || (appointment.phone_is_whatsapp && appointment.phone)) && (
-                            <a 
-                              href={`https://wa.me/${appointment.phone_is_whatsapp ? appointment.phone : appointment.whatsapp_number}`} 
-                              target="_blank" 
+                            <a
+                              href={`https://wa.me/${appointment.phone_is_whatsapp ? appointment.phone : appointment.whatsapp_number}`}
+                              target="_blank"
                               rel="noopener noreferrer"
-                              className="text-green-600 hover:text-green-800"
+                              className="text-green-500 hover:text-green-600 transition-colors"
                             >
-                              <MessageSquareText className="w-4 h-4" />
+                              <MessageCircle className="w-4 h-4" />
                             </a>
                           )}
                         </div>
@@ -421,7 +420,7 @@ export default function AdminAppointments() {
         {showModal && selectedAppointment && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-2xl bg-white">
-            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+              <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
                 <XCircle className="w-6 h-6" />
               </button>
               <div className="mb-6">
@@ -439,13 +438,13 @@ export default function AdminAppointments() {
                       <span className="font-medium">Telefone:</span>
                       <span>{selectedAppointment.phone || 'N/D'}</span>
                       {(selectedAppointment.whatsapp_number || (selectedAppointment.phone_is_whatsapp && selectedAppointment.phone)) && (
-                        <a 
-                          href={`https://wa.me/${selectedAppointment.phone_is_whatsapp ? selectedAppointment.phone : selectedAppointment.whatsapp_number}`} 
-                          target="_blank" 
+                        <a
+                          href={`https://wa.me/${selectedAppointment.phone_is_whatsapp ? selectedAppointment.phone : selectedAppointment.whatsapp_number}`}
+                          target="_blank"
                           rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-800"
+                          className="text-green-500 hover:text-green-600 transition-colors"
                         >
-                          <MessageSquareText className="w-4 h-4" />
+                          <MessageCircle className="w-4 h-4" />
                         </a>
                       )}
                     </p>
@@ -514,11 +513,11 @@ export default function AdminAppointments() {
                   {/* Left Side: Main Actions */}
                   <div className="space-y-4">
                     <h4 className="text-lg font-semibold text-gray-900">Ações Rápidas</h4>
-                    
+
                     {/* Confirm Button */}
                     {selectedAppointment.status === 'scheduled' && (
-                      <button 
-                        onClick={handleConfirm} 
+                      <button
+                        onClick={handleConfirm}
                         className="w-full px-4 py-3 rounded-xl font-medium transition-colors bg-green-600 text-white hover:bg-green-700 flex items-center justify-center space-x-2"
                       >
                         <Check className="w-5 h-5" />
@@ -531,9 +530,9 @@ export default function AdminAppointments() {
                       <h5 className="text-md font-medium text-gray-800 mb-2">Alterar Status</h5>
                       <div className="flex flex-wrap gap-2">
                         {getNextStatuses(selectedAppointment.status).map((status) => (
-                          <button 
-                            key={status} 
-                            onClick={() => handleUpdateStatus(selectedAppointment.id, status)} 
+                          <button
+                            key={status}
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, status)}
                             className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors bg-blue-100 hover:bg-blue-200 text-blue-700`}
                           >
                             {statusLabels[status]}
@@ -543,17 +542,17 @@ export default function AdminAppointments() {
                     </div>
 
                     {/* Cancel Button */}
-                    {selectedAppointment.status !== 'canceled_by_admin' && selectedAppointment.status !== 'canceled_by_customer' && (
-                       <div>
-                         <h5 className="text-md font-medium text-gray-800 mb-2">Cancelar</h5>
-                         <button 
-                           onClick={handleCancel} 
-                           className="w-full px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-medium flex items-center justify-center space-x-2"
-                          >
-                           <XCircle className="w-5 h-5" />
-                           <span>Cancelar Agendamento</span>
-                         </button>
-                       </div>
+                    {selectedAppointment.status !== 'canceled_by_admin' && selectedAppointment.status !== 'canceled_by_customer' && selectedAppointment.status !== 'completed' && (
+                      <div>
+                        <h5 className="text-md font-medium text-gray-800 mb-2">Cancelar</h5>
+                        <button
+                          onClick={handleCancel}
+                          className="w-full px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-medium flex items-center justify-center space-x-2"
+                        >
+                          <XCircle className="w-5 h-5" />
+                          <span>Cancelar Agendamento</span>
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -561,18 +560,18 @@ export default function AdminAppointments() {
                   <div className="space-y-4">
                     <h4 className="text-lg font-semibold text-gray-900">Reagendar</h4>
                     <div className="space-y-3">
-                      <input 
-                        type="date" 
-                        className="w-full border rounded-xl px-3 py-2" 
-                        onChange={(e) => { 
-                          const iso = e.target.value; 
-                          setRescheduleDate(iso); 
-                          if (iso) loadAvailableSlots(iso); 
-                        }} 
+                      <input
+                        type="date"
+                        className="w-full border rounded-xl px-3 py-2"
+                        onChange={(e) => {
+                          const iso = e.target.value;
+                          setRescheduleDate(iso);
+                          if (iso) loadAvailableSlots(iso);
+                        }}
                       />
-                      <select 
-                        className="w-full border rounded-xl px-3 py-2" 
-                        value={rescheduleTimeSlotId ?? ""} 
+                      <select
+                        className="w-full border rounded-xl px-3 py-2"
+                        value={rescheduleTimeSlotId ?? ""}
                         onChange={(e) => setRescheduleTimeSlotId(e.target.value ? Number(e.target.value) : null)}
                       >
                         <option value="">Selecione um novo horário</option>
@@ -580,8 +579,8 @@ export default function AdminAppointments() {
                           <option key={s.id} value={s.id}>{s.start_time}</option>
                         ))}
                       </select>
-                      <button 
-                        onClick={handleReschedule} 
+                      <button
+                        onClick={handleReschedule}
                         className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium"
                       >
                         Reagendar
