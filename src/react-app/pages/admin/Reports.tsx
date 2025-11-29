@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import AdminNavigation from "@/react-app/components/AdminNavigation";
-import { 
-  BarChart3, 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
   Calendar,
   DollarSign,
   Users,
@@ -63,7 +63,7 @@ export default function AdminReports() {
     monthly_trends: []
   });
   const [dataLoading, setDataLoading] = useState(true);
-  const [dateRange, setDateRange] = useState("30"); // days
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
   useEffect(() => {
     if (!currentUser && !loading) {
@@ -74,7 +74,7 @@ export default function AdminReports() {
     if (currentUser) {
       fetchReportData();
     }
-  }, [currentUser, loading, navigate, dateRange]);
+  }, [currentUser, loading, navigate, viewMode]);
 
   const fetchReportData = async () => {
     setDataLoading(true);
@@ -87,10 +87,15 @@ export default function AdminReports() {
         return;
       }
 
-      const response = await fetch(`${FUNCTIONS_URL}/admin-reports?period=${dateRange}`, {
+      // Determine period based on viewMode
+      let period = "30";
+      if (viewMode === 'weekly') period = "90"; // Last 3 months for weekly view
+      if (viewMode === 'monthly') period = "365"; // Last year for monthly view
+
+      const response = await fetch(`${FUNCTIONS_URL}/admin-reports?period=${period}`, {
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
@@ -107,11 +112,21 @@ export default function AdminReports() {
     }
   };
 
-  const exportReport = async (format: 'csv' | 'pdf') => {
-    // Note: The edge function currently doesn't support export (it's commented out/not implemented in the plan).
-    // For now, we can just log or alert that this feature is coming soon, or implement it if requested.
-    // Since the user asked to "connect", viewing data is the priority.
-    alert("Export functionality coming soon!");
+  const exportReport = () => {
+    const csvContent = [
+      ["Date", "Revenue"],
+      ...reportData.revenue.daily_revenue.map(item => [item.date, item.amount])
+    ].map(e => e.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `report_${viewMode}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading || dataLoading) {
@@ -127,7 +142,7 @@ export default function AdminReports() {
   return (
     <div className="min-h-screen bg-gray-100">
       <AdminNavigation />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -135,30 +150,36 @@ export default function AdminReports() {
             <p className="text-gray-600">Insights de negócios e métricas de desempenho.</p>
           </div>
           <div className="flex items-center space-x-4">
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="7">Últimos 7 dias</option>
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="365">Último ano</option>
-            </select>
+            <div className="bg-white rounded-xl p-1 flex border border-gray-200">
+              <button
+                onClick={() => setViewMode('daily')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'daily' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                Diário
+              </button>
+              <button
+                onClick={() => setViewMode('weekly')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'weekly' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                Semanal
+              </button>
+              <button
+                onClick={() => setViewMode('monthly')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'monthly' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                Mensal
+              </button>
+            </div>
             <div className="flex space-x-2">
               <button
-                onClick={() => exportReport('csv')}
+                onClick={exportReport}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center space-x-2"
               >
                 <Download className="w-4 h-4" />
-                <span>CSV</span>
-              </button>
-              <button
-                onClick={() => exportReport('pdf')}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center space-x-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>PDF</span>
+                <span>Exportar CSV</span>
               </button>
             </div>
           </div>
@@ -179,9 +200,8 @@ export default function AdminReports() {
                   ) : (
                     <TrendingDown className="w-4 h-4 text-red-600 mr-1" />
                   )}
-                  <span className={`text-sm font-medium ${
-                    reportData.revenue.growth_percentage >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <span className={`text-sm font-medium ${reportData.revenue.growth_percentage >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
                     {Math.abs(reportData.revenue.growth_percentage)}%
                   </span>
                 </div>
@@ -206,9 +226,8 @@ export default function AdminReports() {
                   ) : (
                     <TrendingDown className="w-4 h-4 text-red-600 mr-1" />
                   )}
-                  <span className={`text-sm font-medium ${
-                    reportData.customers.growth_percentage >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <span className={`text-sm font-medium ${reportData.customers.growth_percentage >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
                     {Math.abs(reportData.customers.growth_percentage)}%
                   </span>
                 </div>
@@ -250,7 +269,7 @@ export default function AdminReports() {
               </div>
             </div>
             <h3 className="text-2xl font-bold text-gray-900">
-              ${reportData.appointments.total_this_month > 0 
+              ${reportData.appointments.total_this_month > 0
                 ? (reportData.revenue.current_month / reportData.appointments.total_this_month).toFixed(2)
                 : '0'
               }
@@ -263,31 +282,65 @@ export default function AdminReports() {
           {/* Revenue Trend */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Tendência de Receita</h3>
-            <div className="space-y-4">
-              {reportData.revenue.daily_revenue.length === 0 ? (
-                  <p className="text-gray-500 text-center">Sem dados para o período selecionado</p>
-              ) : (
-                  reportData.revenue.daily_revenue.map((day, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-gray-600">
-                        {new Date(day.date).toLocaleDateString('pt-BR', { weekday: 'short', month: 'short', day: 'numeric' })}
-                      </span>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-600 h-2 rounded-full"
-                            style={{
-                              width: `${Math.max((day.amount / Math.max(...reportData.revenue.daily_revenue.map(d => d.amount))) * 100, 5)}%`
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-gray-900 font-medium min-w-[60px] text-right">
-                          ${day.amount}
-                        </span>
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {(() => {
+                let chartData: Array<{ label: string; amount: number; percentage: number }> = [];
+
+                if (viewMode === 'daily') {
+                  const maxAmount = Math.max(...reportData.revenue.daily_revenue.map(d => d.amount), 1);
+                  chartData = reportData.revenue.daily_revenue.map(day => ({
+                    label: new Date(day.date).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }),
+                    amount: day.amount,
+                    percentage: (day.amount / maxAmount) * 100
+                  }));
+                } else if (viewMode === 'weekly') {
+                  // Aggregate by week
+                  const weeklyMap: Record<string, number> = {};
+                  reportData.revenue.daily_revenue.forEach(day => {
+                    const date = new Date(day.date);
+                    const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
+                    const key = weekStart.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+                    weeklyMap[key] = (weeklyMap[key] || 0) + day.amount;
+                  });
+                  const maxAmount = Math.max(...Object.values(weeklyMap), 1);
+                  chartData = Object.entries(weeklyMap).map(([label, amount]) => ({
+                    label: `Semana ${label}`,
+                    amount,
+                    percentage: (amount / maxAmount) * 100
+                  }));
+                } else {
+                  // Monthly view
+                  const maxAmount = Math.max(...reportData.monthly_trends.map(m => m.revenue), 1);
+                  chartData = reportData.monthly_trends.map(month => ({
+                    label: month.month,
+                    amount: month.revenue,
+                    percentage: (month.revenue / maxAmount) * 100
+                  }));
+                }
+
+                if (chartData.length === 0) {
+                  return <p className="text-gray-500 text-center">Sem dados para o período selecionado</p>;
+                }
+
+                return chartData.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="text-gray-600 text-sm w-24 truncate" title={item.label}>
+                      {item.label}
+                    </span>
+                    <div className="flex items-center space-x-2 flex-1 mx-4">
+                      <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div
+                          className="bg-green-600 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.max(item.percentage, 0)}%` }}
+                        ></div>
                       </div>
                     </div>
-                  ))
-              )}
+                    <span className="text-gray-900 font-medium w-20 text-right">
+                      ${item.amount.toLocaleString()}
+                    </span>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
 
@@ -315,7 +368,7 @@ export default function AdminReports() {
                   </div>
                 </div>
               ))}
-              
+
               {reportData.popular_services.length === 0 && (
                 <div className="text-center py-8">
                   <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -354,7 +407,7 @@ export default function AdminReports() {
                 ))}
               </tbody>
             </table>
-            
+
             {reportData.monthly_trends.length === 0 && (
               <div className="text-center py-8">
                 <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />

@@ -4,17 +4,18 @@ import AdminNavigation from "@/react-app/components/AdminNavigation";
 // ⚠️ SUBSTITUA PELO SEU CLIENTE SUPABASE REAL
 import { supabase } from "@/lib/supabaseClient";
 
-import { 
-  Users, 
-  Search, 
-  Car, 
+import {
+  Users,
+  Search,
+  Car,
   Calendar,
   Pencil,
   Trash2,
   Phone,
   MapPin,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  MessageCircle
 } from "lucide-react";
 import { useAuth } from "@/react-app/AuthContext";
 
@@ -117,13 +118,13 @@ export default function AdminCustomers() {
       if (!token) {
         showMessage("Sessão expirada. Faça login novamente.", true);
         navigate("/sign-in");
-        return; 
+        return;
       }
 
       const response = await fetch(`${FUNCTIONS_URL}/admin-customers`, { // Rota corrigida
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, 
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -184,14 +185,14 @@ export default function AdminCustomers() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, 
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(editableCustomer),
       });
 
       if (response.ok) {
-        const updatedCustomer = await response.json(); 
-        setCustomers(prevCustomers => prevCustomers.map(c => 
+        const updatedCustomer = await response.json();
+        setCustomers(prevCustomers => prevCustomers.map(c =>
           c.id === updatedCustomer.id ? { ...c, ...updatedCustomer } : c
         ));
         setShowModal(false);
@@ -218,14 +219,14 @@ export default function AdminCustomers() {
         navigate("/sign-in");
         return;
       }
-      
+
       const payload = { ...newCustomer, zip_code: newCustomer.cep };
 
       const response = await fetch(`${FUNCTIONS_URL}/admin-customers`, { // Rota corrigida
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, 
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
@@ -233,7 +234,7 @@ export default function AdminCustomers() {
       if (response.ok) {
         setShowCreateModal(false);
         setNewCustomer({
-          email: '', password: '', first_name: '', last_name: '', 
+          email: '', password: '', first_name: '', last_name: '',
           phone: '', address: '', city: '', state: '', cep: '',
         });
         await fetchCustomers(); // Atualiza a lista
@@ -295,7 +296,7 @@ export default function AdminCustomers() {
   return (
     <div className="min-h-screen bg-gray-100">
       <AdminNavigation />
-      
+
       {/* Componente Toast */}
       {message && (
         <div
@@ -404,7 +405,16 @@ export default function AdminCustomers() {
                         {customer.phone ? (
                           <div className="flex items-center mb-1">
                             <Phone className="w-3 h-3 text-gray-400 mr-2" />
-                            {customer.phone}
+                            <span className="mr-2">{customer.phone}</span>
+                            <a
+                              href={`https://wa.me/${customer.phone.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-500 hover:text-green-600 transition-colors"
+                              title="Conversar no WhatsApp"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </a>
                           </div>
                         ) : null}
                         <div className="flex items-start">
@@ -432,11 +442,10 @@ export default function AdminCustomers() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {customer.subscription_status ? (
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          customer.subscription_status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${customer.subscription_status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                          }`}>
                           {customer.subscription_status}
                         </span>
                       ) : (
@@ -536,7 +545,7 @@ export default function AdminCustomers() {
                                 zip_code: addressData.zip_code,
                               }));
                             } else {
-                                showMessage("CEP não encontrado ou inválido.", true);
+                              showMessage("CEP não encontrado ou inválido.", true);
                             }
                           }
                         }}
@@ -693,7 +702,7 @@ export default function AdminCustomers() {
                                 cep: addressData.zip_code, // Keep formatted CEP
                               }));
                             } else {
-                                showMessage("CEP não encontrado ou inválido.", true);
+                              showMessage("CEP não encontrado ou inválido.", true);
                             }
                           }
                         }}

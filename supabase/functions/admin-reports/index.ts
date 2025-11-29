@@ -4,209 +4,209 @@ import { supabase } from '../_shared/supabaseClient.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  try {
-    const supabaseUserClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
-
-    // --- Auth Check ---
-    const { data: { user } } = await supabaseUserClient.auth.getUser()
-    if (!user) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    if (req.method === 'OPTIONS') {
+        return new Response('ok', { headers: corsHeaders })
     }
 
-    const { data: profile } = await supabaseUserClient
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+    try {
+        const supabaseUserClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+        )
 
-    if (profile?.role !== 'admin') {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
+        // --- Auth Check ---
+        const { data: { user } } = await supabaseUserClient.auth.getUser()
+        if (!user) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
 
-    // --- Parse Query Params ---
-    const url = new URL(req.url)
-    const periodDays = parseInt(url.searchParams.get('period') || '30')
-    const now = new Date()
-    const startDate = new Date()
-    startDate.setDate(now.getDate() - periodDays)
+        const { data: profile } = await supabaseUserClient
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
 
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+        if (profile?.role !== 'admin') {
+            return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
 
-    // --- 1. Revenue Stats ---
-    // Current Month Revenue
-    const { data: currentMonthData } = await supabase
-        .from('appointments')
-        .select('total_price, appointment_time')
-        .eq('status', 'completed')
-        .gte('appointment_time', startOfMonth.toISOString())
+        // --- Parse Query Params ---
+        const url = new URL(req.url)
+        const periodDays = parseInt(url.searchParams.get('period') || '30')
+        const now = new Date()
+        const startDate = new Date()
+        startDate.setDate(now.getDate() - periodDays)
 
-    const currentMonthRevenue = currentMonthData?.reduce((sum, app) => sum + (Number(app.total_price) || 0), 0) || 0
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
 
-    // Previous Month Revenue
-    const { data: lastMonthData } = await supabase
-        .from('appointments')
-        .select('total_price')
-        .eq('status', 'completed')
-        .gte('appointment_time', startOfLastMonth.toISOString())
-        .lte('appointment_time', endOfLastMonth.toISOString())
+        // --- 1. Revenue Stats ---
+        // Current Month Revenue
+        const { data: currentMonthData } = await supabase
+            .from('appointments')
+            .select('total_price, appointment_time')
+            .eq('status', 'completed')
+            .gte('appointment_time', startOfMonth.toISOString())
 
-    const lastMonthRevenue = lastMonthData?.reduce((sum, app) => sum + (Number(app.total_price) || 0), 0) || 0
+        const currentMonthRevenue = currentMonthData?.reduce((sum, app) => sum + (Number(app.total_price) || 0), 0) || 0
 
-    const revenueGrowth = lastMonthRevenue === 0
-        ? (currentMonthRevenue > 0 ? 100 : 0)
-        : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+        // Previous Month Revenue
+        const { data: lastMonthData } = await supabase
+            .from('appointments')
+            .select('total_price')
+            .eq('status', 'completed')
+            .gte('appointment_time', startOfLastMonth.toISOString())
+            .lte('appointment_time', endOfLastMonth.toISOString())
 
-    // Daily Revenue (for the selected period)
-    const { data: periodRevenueData } = await supabase
-        .from('appointments')
-        .select('total_price, appointment_time')
-        .eq('status', 'completed')
-        .gte('appointment_time', startDate.toISOString())
-        .order('appointment_time')
+        const lastMonthRevenue = lastMonthData?.reduce((sum, app) => sum + (Number(app.total_price) || 0), 0) || 0
 
-    const dailyRevenueMap: Record<string, number> = {}
-    periodRevenueData?.forEach(app => {
-        const date = app.appointment_time.split('T')[0]
-        dailyRevenueMap[date] = (dailyRevenueMap[date] || 0) + (Number(app.total_price) || 0)
-    })
+        const revenueGrowth = lastMonthRevenue === 0
+            ? (currentMonthRevenue > 0 ? 100 : 0)
+            : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
 
-    const dailyRevenue = Object.entries(dailyRevenueMap).map(([date, amount]) => ({ date, amount }))
+        // Daily Revenue (for the selected period)
+        const { data: periodRevenueData } = await supabase
+            .from('appointments')
+            .select('total_price, appointment_time')
+            .eq('status', 'completed')
+            .gte('appointment_time', startDate.toISOString())
+            .order('appointment_time')
 
-    // --- 2. Customer Stats ---
-    const { count: totalCustomers } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'customer')
+        const dailyRevenueMap: Record<string, number> = {}
+        periodRevenueData?.forEach(app => {
+            const date = app.appointment_time.split('T')[0]
+            dailyRevenueMap[date] = (dailyRevenueMap[date] || 0) + (Number(app.total_price) || 0)
+        })
 
-    const { count: newCustomersMonth } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'customer')
-        .gte('created_at', startOfMonth.toISOString())
-    
-    // Simplified growth calculation for customers (assuming linear or just showing current vs new)
-    const customerGrowth = 0 // implementing real growth would require historical data queries
+        const dailyRevenue = Object.entries(dailyRevenueMap).map(([date, amount]) => ({ date, amount }))
 
-    // --- 3. Appointment Stats ---
-    const { data: monthAppointments } = await supabase
-        .from('appointments')
-        .select('status')
-        .gte('appointment_time', startOfMonth.toISOString())
+        // --- 2. Customer Stats ---
+        const { count: totalCustomers } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', 'customer')
 
-    const totalThisMonth = monthAppointments?.length || 0
-    const completedThisMonth = monthAppointments?.filter(a => a.status === 'completed').length || 0
-    const canceledThisMonth = monthAppointments?.filter(a => a.status === 'canceled').length || 0
-    const completionRate = totalThisMonth > 0 ? Math.round((completedThisMonth / totalThisMonth) * 100) : 0
+        const { count: newCustomersMonth } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', 'customer')
+            .gte('created_at', startOfMonth.toISOString())
 
-    // --- 4. Popular Services ---
-    const { data: allCompletedServices } = await supabase
-        .from('appointments')
-        .select('service_type, total_price')
-        .eq('status', 'completed')
-        .gte('appointment_time', startDate.toISOString())
+        // Simplified growth calculation for customers (assuming linear or just showing current vs new)
+        const customerGrowth = 0 // implementing real growth would require historical data queries
 
-    const servicesMap: Record<string, { count: number, revenue: number }> = {}
-    allCompletedServices?.forEach(app => {
-        const type = app.service_type || 'unknown'
-        if (!servicesMap[type]) servicesMap[type] = { count: 0, revenue: 0 }
-        servicesMap[type].count++
-        servicesMap[type].revenue += Number(app.total_price) || 0
-    })
+        // --- 3. Appointment Stats ---
+        const { data: monthAppointments } = await supabase
+            .from('appointments')
+            .select('status')
+            .gte('appointment_time', startOfMonth.toISOString())
 
-    const popularServices = Object.entries(servicesMap)
-        .map(([service_type, data]) => ({ service_type, ...data }))
-        .sort((a, b) => b.count - a.count)
+        const totalThisMonth = monthAppointments?.length || 0
+        const completedThisMonth = monthAppointments?.filter(a => a.status === 'completed').length || 0
+        const canceledThisMonth = monthAppointments?.filter(a => a.status === 'canceled').length || 0
+        const completionRate = totalThisMonth > 0 ? Math.round((completedThisMonth / totalThisMonth) * 100) : 0
 
-    // --- 5. Monthly Trends (Last 6 months) ---
-    const trendsStartDate = new Date()
-    trendsStartDate.setMonth(trendsStartDate.getMonth() - 5)
-    trendsStartDate.setDate(1)
+        // --- 4. Popular Services ---
+        const { data: allCompletedServices } = await supabase
+            .from('appointments')
+            .select('service_type, total_price')
+            .eq('status', 'completed')
+            .gte('appointment_time', startDate.toISOString())
 
-    const { data: trendsData } = await supabase
-        .from('appointments')
-        .select('appointment_time, total_price, status')
-        .gte('appointment_time', trendsStartDate.toISOString())
+        const servicesMap: Record<string, { count: number, revenue: number }> = {}
+        allCompletedServices?.forEach(app => {
+            const type = app.service_type || 'unknown'
+            if (!servicesMap[type]) servicesMap[type] = { count: 0, revenue: 0 }
+            servicesMap[type].count++
+            servicesMap[type].revenue += Number(app.total_price) || 0
+        })
 
-    // Need to also count new customers per month for the trends
-    const { data: trendsCustomers } = await supabase
-        .from('profiles')
-        .select('created_at')
-        .eq('role', 'customer')
-        .gte('created_at', trendsStartDate.toISOString())
+        const popularServices = Object.entries(servicesMap)
+            .map(([service_type, data]) => ({ service_type, ...data }))
+            .sort((a, b) => b.count - a.count)
 
-    const monthlyTrendsMap: Record<string, { appointments: number, revenue: number, customers: number }> = {}
+        // --- 5. Monthly Trends (Last 12 months) ---
+        const trendsStartDate = new Date()
+        trendsStartDate.setMonth(trendsStartDate.getMonth() - 11) // Go back 11 months to include current month = 12 months total
+        trendsStartDate.setDate(1)
 
-    // Initialize map keys
-    for (let i = 0; i < 6; i++) {
-        const d = new Date(trendsStartDate)
-        d.setMonth(d.getMonth() + i)
-        const key = d.toLocaleString('default', { month: 'short' })
-        monthlyTrendsMap[key] = { appointments: 0, revenue: 0, customers: 0 }
-    }
+        const { data: trendsData } = await supabase
+            .from('appointments')
+            .select('appointment_time, total_price, status')
+            .gte('appointment_time', trendsStartDate.toISOString())
 
-    trendsData?.forEach(app => {
-        const date = new Date(app.appointment_time)
-        const key = date.toLocaleString('default', { month: 'short' })
-        if (monthlyTrendsMap[key]) {
-            monthlyTrendsMap[key].appointments++
-            if (app.status === 'completed') {
-                monthlyTrendsMap[key].revenue += Number(app.total_price) || 0
+        // Need to also count new customers per month for the trends
+        const { data: trendsCustomers } = await supabase
+            .from('profiles')
+            .select('created_at')
+            .eq('role', 'customer')
+            .gte('created_at', trendsStartDate.toISOString())
+
+        const monthlyTrendsMap: Record<string, { appointments: number, revenue: number, customers: number }> = {}
+
+        // Initialize map keys
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(trendsStartDate)
+            d.setMonth(d.getMonth() + i)
+            const key = d.toLocaleString('default', { month: 'short', year: '2-digit' }) // Include year for clarity
+            monthlyTrendsMap[key] = { appointments: 0, revenue: 0, customers: 0 }
+        }
+
+        trendsData?.forEach(app => {
+            const date = new Date(app.appointment_time)
+            const key = date.toLocaleString('default', { month: 'short', year: '2-digit' })
+            if (monthlyTrendsMap[key]) {
+                monthlyTrendsMap[key].appointments++
+                if (app.status === 'completed') {
+                    monthlyTrendsMap[key].revenue += Number(app.total_price) || 0
+                }
             }
+        })
+
+        trendsCustomers?.forEach(cust => {
+            const date = new Date(cust.created_at)
+            const key = date.toLocaleString('default', { month: 'short', year: '2-digit' })
+            if (monthlyTrendsMap[key]) {
+                monthlyTrendsMap[key].customers++
+            }
+        })
+
+        const monthlyTrends = Object.entries(monthlyTrendsMap).map(([month, data]) => ({ month, ...data }))
+
+
+        const reportData = {
+            revenue: {
+                current_month: currentMonthRevenue,
+                previous_month: lastMonthRevenue,
+                growth_percentage: Math.round(revenueGrowth),
+                daily_revenue: dailyRevenue
+            },
+            customers: {
+                total: totalCustomers || 0,
+                new_this_month: newCustomersMonth || 0,
+                growth_percentage: customerGrowth
+            },
+            appointments: {
+                total_this_month: totalThisMonth,
+                completed: completedThisMonth,
+                canceled: canceledThisMonth,
+                completion_rate: completionRate
+            },
+            popular_services: popularServices,
+            monthly_trends: monthlyTrends
         }
-    })
 
-    trendsCustomers?.forEach(cust => {
-        const date = new Date(cust.created_at)
-        const key = date.toLocaleString('default', { month: 'short' })
-        if (monthlyTrendsMap[key]) {
-            monthlyTrendsMap[key].customers++
-        }
-    })
+        return new Response(JSON.stringify(reportData), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200
+        })
 
-    const monthlyTrends = Object.entries(monthlyTrendsMap).map(([month, data]) => ({ month, ...data }))
-
-
-    const reportData = {
-        revenue: {
-            current_month: currentMonthRevenue,
-            previous_month: lastMonthRevenue,
-            growth_percentage: Math.round(revenueGrowth),
-            daily_revenue: dailyRevenue
-        },
-        customers: {
-            total: totalCustomers || 0,
-            new_this_month: newCustomersMonth || 0,
-            growth_percentage: customerGrowth
-        },
-        appointments: {
-            total_this_month: totalThisMonth,
-            completed: completedThisMonth,
-            canceled: canceledThisMonth,
-            completion_rate: completionRate
-        },
-        popular_services: popularServices,
-        monthly_trends: monthlyTrends
+    } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+        })
     }
-
-    return new Response(JSON.stringify(reportData), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-    })
-
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
-  }
 })

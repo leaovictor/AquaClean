@@ -5,6 +5,7 @@ import type { Session, User } from '@supabase/supabase-js';
 
 interface Profile {
   role?: string;
+  subscription_status?: string;
 }
 
 export interface CurrentUser extends User {
@@ -31,15 +32,15 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
         console.log("AuthContext: getInitialSession try");
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
-        
+
         if (session?.user) {
           console.log("AuthContext: User found in session, fetching profile");
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, subscription_status')
             .eq('id', session.user.id)
             .single();
-          
+
           setCurrentUser({ ...session.user, profile });
         } else {
           console.log("AuthContext: No user in session");
@@ -64,10 +65,10 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (session?.user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, subscription_status')
             .eq('id', session.user.id)
             .single();
-          
+
           setCurrentUser({ ...session.user, profile });
         } else {
           setCurrentUser(null);

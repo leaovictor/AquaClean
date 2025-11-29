@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Car, BarChart3, Calendar, Users, CreditCard, FileText, LogOut, User, Bell, Clock, Archive } from "lucide-react";
+import { Car, BarChart3, Calendar, Users, FileText, LogOut, User, Bell, Settings } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/react-app/AuthContext";
 import { supabase } from "@/lib/supabaseClient"; // Caminho corrigido
@@ -23,7 +23,7 @@ export default function AdminNavigation() {
     { path: "/admin/dashboard", icon: BarChart3, label: "Painel" },
     { path: "/admin/appointments", icon: Calendar, label: "Agendamentos" },
     { path: "/admin/customers", icon: Users, label: "Clientes" },
-    { path: "/admin/assets", icon: Archive, label: "Ativos" },
+    { path: "/admin/settings", icon: Settings, label: "Configurações" },
     { path: "/admin/reports", icon: FileText, label: "Relatórios" },
   ];
 
@@ -53,11 +53,10 @@ export default function AdminNavigation() {
               <button
                 key={path}
                 onClick={() => navigate(path)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
-                  location.pathname === path
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                }`}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${location.pathname === path
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
@@ -73,15 +72,15 @@ export default function AdminNavigation() {
                 3
               </span>
             </button>
-            
+
             <div className="relative">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="flex items-center space-x-2 p-2 rounded-xl hover:bg-gray-800 transition-all duration-200"
               >
-                {currentUser?.photoURL ? ( // Use currentUser.photoURL
+                {currentUser?.user_metadata?.avatar_url ? (
                   <img
-                    src={currentUser.photoURL}
+                    src={currentUser.user_metadata.avatar_url}
                     alt="Profile"
                     className="w-8 h-8 rounded-full"
                   />
@@ -91,7 +90,7 @@ export default function AdminNavigation() {
                   </div>
                 )}
                 <span className="hidden sm:block font-medium text-gray-300">
-                  {currentUser?.displayName || 'Administrador'} {/* Use currentUser.displayName */}
+                  {currentUser?.user_metadata?.full_name || currentUser?.email || 'Administrador'}
                 </span>
               </button>
 
@@ -147,11 +146,10 @@ export default function AdminNavigation() {
                     navigate(path);
                     setIsMenuOpen(false);
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                    location.pathname === path
-                      ? "bg-gray-800 text-white"
-                      : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                  }`}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${location.pathname === path
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{label}</span>
