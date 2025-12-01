@@ -39,13 +39,58 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
-    } 
+    }
     // Handle POST request to create a new vehicle
     else if (req.method === 'POST') {
       const vehicleData = await req.json();
-      
-      const newVehicle = { 
-        ...vehicleData, 
+
+      // --- ABUSE PREVENTION: 30-Day Cooldown for Default Vehicle ---
+      if (vehicleData.is_default) {
+        // 1. Fetch user profile to check last_default_change
+        const { data: profile, error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .select('last_default_change')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) throw profileError;
+
+        if (profile.last_default_change) {
+          const lastChange = new Date(profile.last_default_change);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - lastChange.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays < 30) {
+            return new Response(JSON.stringify({
+              error: `Você só pode alterar seu veículo padrão uma vez a cada 30 dias. Próxima alteração permitida em ${30 - diffDays} dias.`
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400,
+            });
+          }
+        }
+
+        // 2. Update last_default_change timestamp
+        const { error: updateError } = await supabaseAdmin
+          .from('profiles')
+          .update({ last_default_change: new Date().toISOString() })
+          .eq('id', user.id);
+
+        if (updateError) throw updateError;
+
+        // 3. Unset is_default for all other vehicles
+        const { error: unsetError } = await supabaseAdmin
+          .from('vehicles')
+          .update({ is_default: false })
+          .eq('user_id', user.id);
+
+        if (unsetError) throw unsetError;
+      }
+      // --- END ABUSE PREVENTION ---
+
+      const newVehicle = {
+        ...vehicleData,
         user_id: user.id,
         plate: vehicleData.plate ? vehicleData.plate.toUpperCase() : vehicleData.plate // Convert plate to uppercase
       };
