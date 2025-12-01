@@ -24,6 +24,7 @@ export default function AdminNavigation() {
     { path: "/admin/dashboard", icon: BarChart3, label: "Painel" },
     { path: "/admin/appointments", icon: Calendar, label: "Agendamentos" },
     { path: "/admin/customers", icon: Users, label: "Clientes" },
+    { path: "/admin/finance", icon: BarChart3, label: "Financeiro" },
     { path: "/admin/settings", icon: Settings, label: "Configurações" },
     { path: "/admin/reports", icon: FileText, label: "Relatórios" },
   ];

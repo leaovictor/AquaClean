@@ -26,7 +26,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const getInitialSession = async () => {
       // Create a promise that rejects after 5 seconds
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Session initialization timed out')), 5000)
+        setTimeout(() => reject(new Error('Session initialization timed out')), 15000)
       );
 
       try {
@@ -79,7 +79,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
           try {
             // Create a timeout promise
             const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Profile fetch timed out')), 5000)
+              setTimeout(() => reject(new Error('Profile fetch timed out')), 15000)
             );
 
             // Race the fetch against the timeout

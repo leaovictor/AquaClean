@@ -14,6 +14,7 @@ import {
   CalendarCheck,
   Calendar,
   MessageCircle,
+  Plus,
 }
   from "lucide-react";
 import { useAuth } from "@/react-app/AuthContext";
@@ -27,6 +28,7 @@ import {
   fetchAvailableSlots,
   AdminAppointment,
 } from "@/react-app/lib/admin-helpers";
+import NewAppointmentModal from "@/react-app/components/NewAppointmentModal";
 
 const statusLabels: { [key: string]: string } = {
   scheduled: "Agendado",
@@ -47,6 +49,7 @@ export default function AdminAppointments() {
   const [dataLoading, setDataLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState<AdminAppointment | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalAppointments, setTotalAppointments] = useState(0);
@@ -324,7 +327,24 @@ export default function AdminAppointments() {
           <button onClick={() => loadAppointments(1)} className="px-4 py-2 bg-blue-600 text-white rounded-xl w-full md:w-auto">
             Buscar
           </button>
+          <button
+            onClick={() => setShowNewAppointmentModal(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-xl w-full md:w-auto flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Novo Agendamento
+          </button>
         </div>
+
+        {/* New Appointment Modal */}
+        {showNewAppointmentModal && (
+          <NewAppointmentModal
+            onClose={() => setShowNewAppointmentModal(false)}
+            onSuccess={() => {
+              loadAppointments(1);
+              setShowNewAppointmentModal(false);
+            }}
+          />
+        )}
 
         {/* Appointments List */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">

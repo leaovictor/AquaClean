@@ -20,20 +20,23 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => null);
     if (!body?.id || !body?.status) return new Response(JSON.stringify({ error: "Missing id or status" }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
 
-    const { id, status } = body;
+    const { id, status, payment_method } = body;
 
     // fetch previous
-    const { data: before } = await supabaseClient.from("appointments").select("status").eq("id", id).single();
+    const { data: before } = await supabaseClient.from("appointments").select("status, payment_method").eq("id", id).single();
 
-    const { data: updated, error } = await supabaseClient.from("appointments").update({ status, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+    const updates: any = { status, updated_at: new Date().toISOString() };
+    if (payment_method) updates.payment_method = payment_method;
+
+    const { data: updated, error } = await supabaseClient.from("appointments").update(updates).eq("id", id).select().single();
     if (error) return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
 
     // insert log
     await supabaseClient.from("appointment_logs").insert({
       appointment_id: id,
       action: "status_update",
-      previous_value: JSON.stringify({ status: before?.status ?? null }),
-      new_value: JSON.stringify({ status }),
+      previous_value: JSON.stringify({ status: before?.status ?? null, payment_method: before?.payment_method ?? null }),
+      new_value: JSON.stringify({ status, payment_method: payment_method ?? before?.payment_method }),
       admin_id: userData.user.id
     });
 
