@@ -2,7 +2,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // --- Helper Functions ---
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -11,27 +12,54 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
-      // Replace with your actual admin logic (e.g. custom claim or specific email)
-      return isAuthenticated() && request.auth.token.email == 'admin@aquaclean.com';
+    // Fetch user role from the 'users' collection
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+
+    function isStaff() {
+      return isAuthenticated() && getUserRole() == 'staff';
+    }
+
+    function isStaffOrAdmin() {
+      return isAdmin() || isStaff();
+    }
+
+    // --- Collection Rules ---
 
     // Users collection
     match /users/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isStaffOrAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+
+      // Notifications subcollection
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow write: if isStaffOrAdmin(); // Staff/Admin send notifications
+      }
     }
 
     // Vehicles collection
     match /vehicles/{vehicleId} {
       allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow read, update, delete: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
+      allow read: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isStaffOrAdmin();
+      allow update, delete: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
     }
 
-    // Appointments collection
+    // Bookings collection (Replaces appointments)
+    match /bookings/{bookingId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isStaffOrAdmin();
+      allow update: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isStaffOrAdmin();
+    }
+
+    // Legacy Appointments (Keep for backward compatibility if needed, or remove)
     match /appointments/{appointmentId} {
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow read: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
-      allow update: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
+      allow read, write: if isAdmin();
     }
 
     // Services collection
@@ -42,16 +70,15 @@ service cloud.firestore {
 
     // Plans collection
     match /plans/{planId} {
-      allow read: if true; // Allow users to see plans
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // Subscriptions collection
-    // Subscriptions collection
     match /subscriptions/{subscriptionId} {
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow read: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
-      allow update: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isStaffOrAdmin();
+      allow update: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
     }
 
     // Availability collection

@@ -7,10 +7,10 @@ part 'vehicle.g.dart';
 abstract class Vehicle with _$Vehicle {
   const factory Vehicle({
     required String id,
-    required String brand,
-    required String model,
-    required String plate,
-    required String color,
+    @Default('') String brand,
+    @Default('') String model,
+    @Default('') String plate,
+    @Default('') String color,
     @Default('sedan') String type, // suv/sedan/hatch
     String? photoUrl,
   }) = _Vehicle;

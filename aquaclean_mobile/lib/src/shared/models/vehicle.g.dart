@@ -8,10 +8,10 @@ part of 'vehicle.dart';
 
 _Vehicle _$VehicleFromJson(Map<String, dynamic> json) => _Vehicle(
   id: json['id'] as String,
-  brand: json['brand'] as String,
-  model: json['model'] as String,
-  plate: json['plate'] as String,
-  color: json['color'] as String,
+  brand: json['brand'] as String? ?? '',
+  model: json['model'] as String? ?? '',
+  plate: json['plate'] as String? ?? '',
+  color: json['color'] as String? ?? '',
   type: json['type'] as String? ?? 'sedan',
   photoUrl: json['photoUrl'] as String?,
 );

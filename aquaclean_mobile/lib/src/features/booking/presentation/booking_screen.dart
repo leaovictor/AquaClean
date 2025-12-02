@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../data/booking_repository.dart';
 import 'booking_controller.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../payment/data/payment_service.dart';
+import '../../../shared/widgets/shimmer_loading.dart';
 
 class BookingScreen extends ConsumerWidget {
   const BookingScreen({super.key});
@@ -142,7 +144,14 @@ class _ServiceSelectionStep extends ConsumerWidget {
                 );
               },
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: 5,
+              itemBuilder: (context, index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: const ShimmerLoading.rectangular(height: 100),
+              ),
+            ),
             error: (err, stack) => Center(child: Text('Erro: $err')),
           ),
         ),
@@ -277,7 +286,14 @@ class _VehicleSelectionStep extends ConsumerWidget {
                 },
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: 3,
+              itemBuilder: (context, index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: const ShimmerLoading.rectangular(height: 80),
+              ),
+            ),
             error: (err, stack) => Center(child: Text('Erro: $err')),
           ),
         ),
@@ -387,7 +403,16 @@ class _ReviewStep extends ConsumerWidget {
     final controller = ref.read(bookingControllerProvider.notifier);
 
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            const ShimmerLoading.rectangular(height: 300),
+            const SizedBox(height: 24),
+            const ShimmerLoading.rectangular(height: 60),
+          ],
+        ),
+      );
     }
 
     return Padding(
@@ -459,28 +484,51 @@ class _ReviewStep extends ConsumerWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () async {
+                // 1. Process Payment
+                final paymentService = ref.read(paymentServiceProvider);
+                final success = await paymentService.processPayment(
+                  state.totalPrice,
+                );
+
+                if (!success) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Pagamento falhou. Tente novamente.'),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                // 2. Create Booking
                 await controller.confirmBooking();
                 if (context.mounted && state.error == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Agendamento realizado com sucesso!'),
+                      content: Text(
+                        'Pagamento confirmado! Agendamento realizado.',
+                      ),
                     ),
                   );
                   context.go('/dashboard');
                 } else if (context.mounted && state.error != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro: ${state.error}')),
+                    SnackBar(content: Text('Erro ao agendar: ${state.error}')),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    Colors.green, // Keep green for confirmation action
+                backgroundColor: const Color(0xFF2563EB), // Blue for payment
                 padding: const EdgeInsets.symmetric(vertical: 20),
               ),
-              child: const Text(
-                'Confirmar Agendamento',
-                style: TextStyle(fontSize: 18),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.credit_card, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Pagar e Agendar', style: TextStyle(fontSize: 18)),
+                ],
               ),
             ),
           ),

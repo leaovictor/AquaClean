@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/models/availability.dart';
+import '../../notifications/data/notification_service.dart';
+import '../../auth/data/auth_repository.dart';
 import '../../../shared/models/booking.dart';
 import '../../../shared/models/service_package.dart';
 import '../../../shared/models/vehicle.dart';

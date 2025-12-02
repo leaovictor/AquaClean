@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../booking/data/booking_repository.dart';
 import '../../../shared/models/booking.dart';
 import 'widgets/weather_widget.dart';
 import 'widgets/car_card.dart';
+import 'widgets/active_bookings_carousel.dart';
+import '../../../shared/widgets/shimmer_loading.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -19,7 +22,7 @@ class DashboardScreen extends ConsumerWidget {
         : const AsyncValue.data([]);
     final bookingsAsync = user != null
         ? ref.watch(userBookingsProvider(user.uid))
-        : const AsyncValue.data([]);
+        : const AsyncValue.data(<Booking>[]);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC), // Slate 50
@@ -32,7 +35,7 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildActiveBookingCard(context, bookingsAsync),
+                  ActiveBookingsCarousel(bookingsAsync: bookingsAsync),
                   const SizedBox(height: 24),
                   _buildSectionTitle(context, 'Meus Carros'),
                   const SizedBox(height: 16),
@@ -116,6 +119,10 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
+      leading: IconButton(
+        icon: const Icon(Icons.menu, color: Colors.white),
+        onPressed: () => ZoomDrawer.of(context)?.toggle(),
+      ),
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined, color: Colors.white),
@@ -129,167 +136,13 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActiveBookingCard(
-    BuildContext context,
-    AsyncValue bookingsAsync,
-  ) {
-    return bookingsAsync.when(
-      data: (bookings) {
-        // Filter for active bookings
-        final activeBookings = bookings
-            .where(
-              (b) =>
-                  b.status != BookingStatus.cancelled &&
-                  b.status != BookingStatus.finished,
-            )
-            .toList();
-
-        if (activeBookings.isEmpty) return const SizedBox.shrink();
-
-        final booking = activeBookings.first; // Most recent active booking
-
-        return Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1E293B), Color(0xFF334155)], // Slate 800-700
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Lavagem em Andamento',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.circle, color: Colors.greenAccent, size: 8),
-                        SizedBox(width: 6),
-                        Text(
-                          'AO VIVO',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.local_car_wash,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getStatusText(booking.status),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Toque para acompanhar',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => context.push('/booking/${booking.id}'),
-                    icon: const Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.1),
-                      padding: const EdgeInsets.all(8),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ).animate().fadeIn().slideY(begin: -0.2);
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (err, stack) => const SizedBox.shrink(),
-    );
-  }
-
-  String _getStatusText(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.pending:
-        return 'Aguardando Confirmação';
-      case BookingStatus.confirmed:
-        return 'Confirmado';
-      case BookingStatus.washing:
-        return 'Lavando seu Carro';
-      case BookingStatus.drying:
-        return 'Secando seu Carro';
-      case BookingStatus.finished:
-        return 'Pronto!';
-      case BookingStatus.cancelled:
-        return 'Cancelado';
-    }
-  }
-
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+      style: const TextStyle(
+        fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFF1E293B),
+        color: Color(0xFF1E293B), // Slate 800
       ),
     );
   }
@@ -304,7 +157,7 @@ class DashboardScreen extends ConsumerWidget {
           }
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: vehicles.length + 1, // +1 for Add Button
+            itemCount: vehicles.length + 1,
             itemBuilder: (context, index) {
               if (index == vehicles.length) {
                 return Padding(
@@ -314,51 +167,51 @@ class DashboardScreen extends ConsumerWidget {
               }
               return CarCard(
                 vehicle: vehicles[index],
-                onTap: () {
-                  // TODO: Show vehicle details or select for booking
-                },
+                onTap: () {},
               ).animate().fadeIn(delay: (100 * index).ms).slideX();
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: 3,
+          itemBuilder: (context, index) => Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: const ShimmerLoading.rectangular(width: 280, height: 180),
+          ),
+        ),
         error: (err, stack) => Center(child: Text('Erro: $err')),
       ),
     );
   }
 
   Widget _buildAddCarButton(BuildContext context, {bool isSmall = false}) {
-    return GestureDetector(
-      onTap: () => context.push('/add-vehicle'),
+    return InkWell(
+      onTap: () => context.push('/vehicles/add'),
       child: Container(
-        width: isSmall ? 80 : 280,
+        width: isSmall ? 100 : 280,
+        height: 180,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.grey.withValues(alpha: 0.3),
-            width: 2,
-            style: BorderStyle
-                .solid, // Dashed border needs a package or custom painter, solid for now
-          ), // Use DottedBorder package for dashed effect if requested
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add_circle_outline,
-              size: isSmall ? 32 : 48,
-              color: const Color(0xFF2563EB),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, color: Color(0xFF2563EB), size: 32),
             ),
             if (!isSmall) ...[
               const SizedBox(height: 16),
               const Text(
                 'Adicionar Carro',
-                style: TextStyle(
-                  color: Color(0xFF2563EB),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ],
@@ -408,15 +261,21 @@ class DashboardScreen extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  // Navigate to booking with this service pre-selected
-                },
+                onTap: () {},
               ),
             ).animate().fadeIn().slideY(begin: 0.2);
           }).toList(),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => Column(
+        children: List.generate(
+          3,
+          (index) => Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: const ShimmerLoading.rectangular(height: 80),
+          ),
+        ),
+      ),
       error: (err, stack) => const SizedBox(),
     );
   }

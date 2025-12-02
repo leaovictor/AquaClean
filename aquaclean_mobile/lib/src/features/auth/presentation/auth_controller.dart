@@ -13,18 +13,21 @@ class AuthController extends _$AuthController {
 
   Future<void> signIn(String email, String password) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       await ref
           .read(authRepositoryProvider)
           .signInWithEmailAndPassword(email, password);
       // Save FCM Token
       await ref.read(notificationServiceProvider).saveCurrentToken();
-    });
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 
   Future<void> signUp(String email, String password, String displayName) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       await ref
           .read(authRepositoryProvider)
           .createUserWithEmailAndPassword(
@@ -34,7 +37,10 @@ class AuthController extends _$AuthController {
           );
       // Save FCM Token
       await ref.read(notificationServiceProvider).saveCurrentToken();
-    });
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 
   Future<void> signOut() async {

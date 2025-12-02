@@ -216,14 +216,14 @@ return $default(_that.id,_that.brand,_that.model,_that.plate,_that.color,_that.t
 @JsonSerializable()
 
 class _Vehicle implements Vehicle {
-  const _Vehicle({required this.id, required this.brand, required this.model, required this.plate, required this.color, this.type = 'sedan', this.photoUrl});
+  const _Vehicle({required this.id, this.brand = '', this.model = '', this.plate = '', this.color = '', this.type = 'sedan', this.photoUrl});
   factory _Vehicle.fromJson(Map<String, dynamic> json) => _$VehicleFromJson(json);
 
 @override final  String id;
-@override final  String brand;
-@override final  String model;
-@override final  String plate;
-@override final  String color;
+@override@JsonKey() final  String brand;
+@override@JsonKey() final  String model;
+@override@JsonKey() final  String plate;
+@override@JsonKey() final  String color;
 @override@JsonKey() final  String type;
 // suv/sedan/hatch
 @override final  String? photoUrl;

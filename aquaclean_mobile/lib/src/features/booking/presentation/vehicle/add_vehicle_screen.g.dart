@@ -7,7 +7,7 @@ part of 'add_vehicle_screen.dart';
 // **************************************************************************
 
 String _$addVehicleControllerHash() =>
-    r'b02f482ea567f41893f514a6cc64bf486c2e0a33';
+    r'598bd5861e9690c081e26288a5b2abf7cd9aee72';
 
 /// See also [AddVehicleController].
 @ProviderFor(AddVehicleController)
