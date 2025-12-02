@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      // Replace with your actual admin logic (e.g. custom claim or specific email)
+      return isAuthenticated() && request.auth.token.email == 'admin@aquaclean.com';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // Vehicles collection
+    match /vehicles/{vehicleId} {
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow read, update, delete: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
+    }
+
+    // Appointments collection
+    match /appointments/{appointmentId} {
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow read: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
+      allow update: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
+    }
+
+    // Services collection
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Plans collection
+    match /plans/{planId} {
+      allow read: if true; // Allow users to see plans
+      allow write: if isAdmin();
+    }
+
+    // Subscriptions collection
+    // Subscriptions collection
+    match /subscriptions/{subscriptionId} {
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow read: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
+      allow update: if (isAuthenticated() && resource.data.user_id == request.auth.uid) || isAdmin();
+    }
+
+    // Availability collection
+    match /availability/{dateId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

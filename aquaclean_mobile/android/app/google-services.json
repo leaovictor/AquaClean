@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "992114921273",
+    "firebase_url": "https://autoolinda-5199e-default-rtdb.firebaseio.com",
+    "project_id": "autoolinda-5199e",
+    "storage_bucket": "autoolinda-5199e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:992114921273:android:bb542502234a99b90de2e8",
+        "android_client_info": {
+          "package_name": "br.dev.victorleao.auto_olinda"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7g0wxdkSEF4D0Rw7GPc041svHWmupZfQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:992114921273:android:60d820df26a029550de2e8",
+        "android_client_info": {
+          "package_name": "com.aquaclean.aquaclean_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7g0wxdkSEF4D0Rw7GPc041svHWmupZfQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
